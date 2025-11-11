@@ -1,0 +1,16 @@
+{
+  "name": "faststock-backend",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon --watch src --signal SIGINT src/index.js"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "pg": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.0"
+  }
+}
