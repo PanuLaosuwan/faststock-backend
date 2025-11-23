@@ -13,13 +13,15 @@ import createStockTable from './data/createStockTable.js';
 import createLostTable from './data/createLostTable.js';
 import createSolutionTable from './data/createSolutionTable.js';
 import productRoutes from './routes/productRoutes.js';
+import barRoutes from './routes/barRoutes.js';
+import stockRoutes from './routes/stockRoutes.js';
 
 
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
 
 // Request logging middleware (moved to top for debugging)
 app.use((req, res, next) => {
@@ -36,6 +38,8 @@ app.use(express.json());
 app.use('/api', userRoutes);
 app.use('/api', eventRoutes);
 app.use('/api', productRoutes);
+app.use('/api', barRoutes);
+app.use('/api', stockRoutes);
 
 
 //Create User Table

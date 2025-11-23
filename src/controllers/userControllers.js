@@ -168,17 +168,32 @@ export const loginUser = async (req, res, next) => {
             throw new Error('JWT_SECRET is not configured');
         }
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email },
+          const token = jwt.sign(
+            { uid: user.uid, username: user.username },
             jwtSecret,
-            { expiresIn: '1h' }
-        );
+            { expiresIn: '8h' }
+          );
+          
 
         handleResponse(res, 200, 'Login successful', {
             user: sanitizeUser(user),
             token
         });
+        if(!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not configured');
+        }
     } catch (error) {
         next(error);
     }
+};
+
+export const getCurrentUser = async (req, res, next) => {
+    try {
+        if (!req.user) {
+          return handleResponse(res, 401, 'Unauthenticated', null);
+        }
+        handleResponse(res, 200, 'Current user fetched successfully', sanitizeUser(req.user));
+      } catch (error) {
+        next(error);
+      }
 };
