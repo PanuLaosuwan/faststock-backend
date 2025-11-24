@@ -11,19 +11,27 @@ const getStockByBarService = async (bid, sdate = null) => {
 
     const result = await pool.query(
         `SELECT
-            s.bid,
-            s.sdate,
+      
+            b.eid,
+            e.ename,
+            b.bid,
+            b.bname,
             s.pid,
+            p.pname,
+            p.unit,
+            p.subunit,
+            s.sdate,
             s.start_quantity,
             s.start_subquantity,
             s.end_quantity,
             s.end_subquantity,
-            s."desc",
-            p.pname,
-            p.unit,
-            p.subunit
+            s."desc"
+    
+      
         FROM stock s
         JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bid
+        JOIN event e ON b.eid = e.eid
         ${where}
         ORDER BY s.sdate DESC, s.pid`,
         values
@@ -34,21 +42,25 @@ const getStockByBarService = async (bid, sdate = null) => {
 const getAllStockService = async () => {
     const result = await pool.query(
         `SELECT
+            b.eid,
+            e.ename,
             s.bid,
-            s.sdate,
+            b.bname,
             s.pid,
+            p.pname,
+            p.unit,
+            p.subunit,       
+            s.sdate,
             s.start_quantity,
             s.start_subquantity,
             s.end_quantity,
             s.end_subquantity,
-            s."desc",
-            p.pname,
-            p.unit,
-            p.subunit,
-            b.eid
+            s."desc"
+     
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bid = b.bid
+        JOIN event e ON b.eid = e.eid
         ORDER BY s.sdate DESC, s.bid, s.pid`
     );
     return result.rows;
@@ -57,21 +69,25 @@ const getAllStockService = async () => {
 const getStockByEventService = async (eid) => {
     const result = await pool.query(
         `SELECT
+            b.eid,
+            e.ename,
             s.bid,
-            s.sdate,
+            b.bname,
             s.pid,
+            p.pname,
+            p.unit,
+            p.subunit,
+            s.sdate,
             s.start_quantity,
             s.start_subquantity,
             s.end_quantity,
             s.end_subquantity,
-            s."desc",
-            p.pname,
-            p.unit,
-            p.subunit,
-            b.eid
+            s."desc"
+     
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bid = b.bid
+        JOIN event e ON b.eid = e.eid
         WHERE b.eid = $1
         ORDER BY s.sdate DESC, s.bid, s.pid`,
         [eid]
@@ -140,10 +156,21 @@ const patchStockService = async (bid, pid, sdate, fields) => {
     return result.rows[0];
 };
 
+const deleteStockService = async (bid, pid, sdate) => {
+    const result = await pool.query(
+        `DELETE FROM stock
+         WHERE bid = $1 AND pid = $2 AND sdate = $3
+         RETURNING bid, sdate, pid, start_quantity, start_subquantity, end_quantity, end_subquantity, "desc"`,
+        [bid, pid, sdate]
+    );
+    return result.rows[0];
+};
+
 export default {
     getStockByBarService,
     getAllStockService,
     getStockByEventService,
     createStockInitialService,
-    patchStockService
+    patchStockService,
+    deleteStockService
 };

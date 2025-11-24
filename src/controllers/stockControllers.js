@@ -5,7 +5,8 @@ const {
     getAllStockService,
     getStockByEventService,
     createStockInitialService,
-    patchStockService
+    patchStockService,
+    deleteStockService
 } = stockServices;
 
 const handleResponse = (res, status, message, data = null) => {
@@ -124,10 +125,26 @@ export const patchStockEntry = async (req, res, next) => {
     }
 };
 
+export const deleteStockEntry = async (req, res, next) => {
+    try {
+        const { barId, pid, sdate } = req.params;
+        const stock = await deleteStockService(barId, pid, sdate);
+
+        if (!stock) {
+            return handleResponse(res, 404, 'Stock entry not found', null);
+        }
+
+        handleResponse(res, 200, 'Stock deleted successfully', formatStock(stock));
+    } catch (error) {
+        next(error);
+    }
+};
+
 export default {
     getStockForBar,
     getAllStock,
     getStockForEvent,
     createStockInitial,
-    patchStockEntry
+    patchStockEntry,
+    deleteStockEntry
 };

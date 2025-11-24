@@ -4,7 +4,8 @@ import {
     getAllStock,
     getStockForEvent,
     createStockInitial,
-    patchStockEntry
+    patchStockEntry,
+    deleteStockEntry
 } from '../controllers/stockControllers.js';
 import { validateStockInitial, validateStockPatch } from '../middlewares/inputValidator.js';
 
@@ -15,7 +16,11 @@ router.get('/stock/bar/:barId', getStockForBar);
 router.get('/stock/event/:eid', getStockForEvent);
 
 router.get('/bars/:barId/stock', getStockForBar);
-router.post('/bars/:barId/stock-initial', validateStockInitial, createStockInitial);
+router.post('/bars/:barId/add-stock', validateStockInitial, createStockInitial);
 router.patch('/bars/:barId/stock/:pid/:sdate', validateStockPatch, patchStockEntry);
+router.delete('/bars/:barId/stock/:pid/:sdate', deleteStockEntry);
+
+// Alias path for patch stock with explicit product segment
+router.patch('/stock/bar/:barId/product/:pid/:sdate', validateStockPatch, patchStockEntry);
 
 export default router;
