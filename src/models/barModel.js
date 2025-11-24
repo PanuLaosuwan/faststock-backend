@@ -91,7 +91,6 @@ const deleteBarService = async (id) => {
     );
     return result.rows[0];
 };
-
 export default {
     getAllBarsService,
     getBarsByUserService,
