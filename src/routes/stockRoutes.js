@@ -12,8 +12,8 @@ import { validateStockInitial, validateStockPatch } from '../middlewares/inputVa
 const router = express.Router();
 
 router.get('/stock', getAllStock);
-router.get('/stock/bar/:barId', getStockForBar);
-router.get('/stock/event/:eid', getStockForEvent);
+router.get('/stock/bybid/:barId', getStockForBar);
+router.get('/stock/byeid/:eid', getStockForEvent);
 
 router.get('/bars/:barId/stock', getStockForBar);
 router.post('/bars/:barId/add-stock', validateStockInitial, createStockInitial);
