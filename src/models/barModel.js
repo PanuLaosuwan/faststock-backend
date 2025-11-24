@@ -1,15 +1,28 @@
 import pool from '../config/db.js';
 
+const baseSelect = `
+    SELECT
+        b.bid,
+        b.eid,
+        b.uid,
+        b.bname,
+        b."desc",
+        e.location,
+        e.ename
+    FROM bar b
+    JOIN event e ON b.eid = e.eid
+`;
+
 const getAllBarsService = async () => {
     const result = await pool.query(
-        'SELECT bid, eid, uid, bname, "desc" FROM bar ORDER BY bid'
+        `${baseSelect} ORDER BY b.bid`
     );
     return result.rows;
 };
 
 const getBarsByUserService = async (uid) => {
     const result = await pool.query(
-        'SELECT bid, eid, uid, bname, "desc" FROM bar WHERE uid = $1 ORDER BY bid',
+        `${baseSelect} WHERE b.uid = $1 ORDER BY b.bid`,
         [uid]
     );
     return result.rows;
@@ -17,7 +30,7 @@ const getBarsByUserService = async (uid) => {
 
 const getBarsByEventService = async (eid) => {
     const result = await pool.query(
-        'SELECT bid, eid, uid, bname, "desc" FROM bar WHERE eid = $1 ORDER BY bid',
+        `${baseSelect} WHERE b.eid = $1 ORDER BY b.bid`,
         [eid]
     );
     return result.rows;
@@ -25,7 +38,7 @@ const getBarsByEventService = async (eid) => {
 
 const getBarByIdService = async (id) => {
     const result = await pool.query(
-        'SELECT bid, eid, uid, bname, "desc" FROM bar WHERE bid = $1',
+        `${baseSelect} WHERE b.bid = $1`,
         [id]
     );
     return result.rows[0];

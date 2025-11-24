@@ -78,7 +78,7 @@ export const getEventById = async (req, res, next) => {
 
 export const createEvent = async (req, res, next) => {
     try {
-        const { ename, edate_start, edate_end, desc } = req.body;
+        const { ename, edate_start, edate_end, location, desc } = req.body;
         const startDate = normalizeDate(edate_start);
         const endDate = normalizeDate(edate_end);
 
@@ -97,6 +97,7 @@ export const createEvent = async (req, res, next) => {
             edate_start: startDate,
             edate_end: endDate,
             day,
+            location: location || null,
             desc: desc || null
         });
         handleResponse(res, 201, 'Event created successfully', formatEventDates(event));
@@ -108,7 +109,7 @@ export const createEvent = async (req, res, next) => {
 export const updateEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { ename, edate_start, edate_end, desc } = req.body;
+        const { ename, edate_start, edate_end, location, desc } = req.body;
         const startDate = normalizeDate(edate_start);
         const endDate = normalizeDate(edate_end);
 
@@ -127,6 +128,7 @@ export const updateEvent = async (req, res, next) => {
             edate_start: startDate,
             edate_end: endDate,
             day,
+            location: location || null,
             desc: desc || null
         });
         if (!event) {
@@ -174,6 +176,10 @@ export const patchEvent = async (req, res, next) => {
             updates.day = day;
         } else if (Object.prototype.hasOwnProperty.call(updates, 'day')) {
             return handleResponse(res, 400, 'Please provide edate_start and edate_end to update day', null);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(updates, 'location') && updates.location === undefined) {
+            updates.location = null;
         }
 
         const event = await patchEventService(id, updates);

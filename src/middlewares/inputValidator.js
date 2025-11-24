@@ -25,6 +25,7 @@ const eventSchema = joi.object({
     ename: joi.string().min(1).max(255).required(),
     edate_start: joi.date().iso().required(),
     edate_end: joi.date().iso().min(joi.ref('edate_start')).required(),
+    location: joi.string().max(255).allow(null, ''),
     day: joi.number().integer().min(1),
     desc: joi.string().allow(null, '')
 });
@@ -34,6 +35,7 @@ const eventPatchSchema = joi.object({
     edate_start: joi.date().iso(),
     edate_end: joi.date().iso(),
     day: joi.number().integer().min(1),
+    location: joi.string().max(255).allow(null, ''),
     desc: joi.string().allow(null, '')
 })
     .min(1)
