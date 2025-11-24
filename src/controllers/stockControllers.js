@@ -2,6 +2,8 @@ import stockServices from '../models/stockModel.js';
 
 const {
     getStockByBarService,
+    getAllStockService,
+    getStockByEventService,
     createStockInitialService,
     patchStockService
 } = stockServices;
@@ -35,6 +37,27 @@ export const getStockForBar = async (req, res, next) => {
         const { barId } = req.params;
         const { date } = req.query;
         const rows = await getStockByBarService(barId, date || null);
+        const formatted = rows.map(formatStock);
+        handleResponse(res, 200, 'Stock fetched successfully', formatted);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getAllStock = async (req, res, next) => {
+    try {
+        const rows = await getAllStockService();
+        const formatted = rows.map(formatStock);
+        handleResponse(res, 200, 'Stock fetched successfully', formatted);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getStockForEvent = async (req, res, next) => {
+    try {
+        const { eid } = req.params;
+        const rows = await getStockByEventService(eid);
         const formatted = rows.map(formatStock);
         handleResponse(res, 200, 'Stock fetched successfully', formatted);
     } catch (error) {
@@ -103,6 +126,8 @@ export const patchStockEntry = async (req, res, next) => {
 
 export default {
     getStockForBar,
+    getAllStock,
+    getStockForEvent,
     createStockInitial,
     patchStockEntry
 };

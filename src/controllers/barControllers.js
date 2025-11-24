@@ -2,6 +2,8 @@ import barServices from '../models/barModel.js';
 
 const {
     getAllBarsService,
+    getBarsByUserService,
+    getBarsByEventService,
     getBarByIdService,
     createBarService,
     updateBarService,
@@ -20,6 +22,26 @@ const handleResponse = (res, status, message, data = null) => {
 export const getAllBars = async (req, res, next) => {
     try {
         const bars = await getAllBarsService();
+        handleResponse(res, 200, 'Bars fetched successfully', bars);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getBarsByUser = async (req, res, next) => {
+    try {
+        const { uid } = req.params;
+        const bars = await getBarsByUserService(uid);
+        handleResponse(res, 200, 'Bars fetched successfully', bars);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getBarsByEvent = async (req, res, next) => {
+    try {
+        const { eid } = req.params;
+        const bars = await getBarsByEventService(eid);
         handleResponse(res, 200, 'Bars fetched successfully', bars);
     } catch (error) {
         next(error);

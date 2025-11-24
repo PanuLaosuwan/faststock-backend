@@ -31,6 +31,54 @@ const getStockByBarService = async (bid, sdate = null) => {
     return result.rows;
 };
 
+const getAllStockService = async () => {
+    const result = await pool.query(
+        `SELECT
+            s.bid,
+            s.sdate,
+            s.pid,
+            s.start_quantity,
+            s.start_subquantity,
+            s.end_quantity,
+            s.end_subquantity,
+            s."desc",
+            p.pname,
+            p.unit,
+            p.subunit,
+            b.eid
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bid
+        ORDER BY s.sdate DESC, s.bid, s.pid`
+    );
+    return result.rows;
+};
+
+const getStockByEventService = async (eid) => {
+    const result = await pool.query(
+        `SELECT
+            s.bid,
+            s.sdate,
+            s.pid,
+            s.start_quantity,
+            s.start_subquantity,
+            s.end_quantity,
+            s.end_subquantity,
+            s."desc",
+            p.pname,
+            p.unit,
+            p.subunit,
+            b.eid
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bid
+        WHERE b.eid = $1
+        ORDER BY s.sdate DESC, s.bid, s.pid`,
+        [eid]
+    );
+    return result.rows;
+};
+
 const createStockInitialService = async ({
     bid,
     pid,
@@ -94,6 +142,8 @@ const patchStockService = async (bid, pid, sdate, fields) => {
 
 export default {
     getStockByBarService,
+    getAllStockService,
+    getStockByEventService,
     createStockInitialService,
     patchStockService
 };
