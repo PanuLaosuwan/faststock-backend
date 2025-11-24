@@ -43,6 +43,7 @@ app.use('/api', stockRoutes);
 
 
 //Create User Table
+/*
 createUserTable();
 createEventTable();
 createProductTable();
@@ -50,7 +51,24 @@ createBarTable();
 createStockTable();
 createLostTable();
 createSolutionTable();
+*/
 
+async function initDb() {
+  try {
+    await createUserTable();
+    await createEventTable();
+    await createProductTable();
+    await createBarTable();
+    await createStockTable();
+    await createLostTable();
+    await createSolutionTable();
+    console.log('All tables created');
+  } catch (err) {
+    console.error('Error initializing database', err);
+  }
+}
+
+initDb();
 
 //testing the database connection
 app.get('/', async (req, res) => {
