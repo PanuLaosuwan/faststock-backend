@@ -22,5 +22,6 @@ router.delete('/bars/:barId/stock/:pid/:sdate', deleteStockEntry);
 
 // Alias path for patch stock with explicit product segment
 router.patch('/stock/bar/:barId/product/:pid/:sdate', validateStockPatch, patchStockEntry);
+router.patch('/update-stock/bar/:barId/product/:pid/:sdate', validateStockPatch, patchStockEntry);
 
 export default router;
