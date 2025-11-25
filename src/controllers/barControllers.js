@@ -50,8 +50,8 @@ export const getBarsByEvent = async (req, res, next) => {
 
 export const getBarById = async (req, res, next) => {
     try {
-        const { bid } = req.params;
-        const bar = await getBarByIdService(bid);
+        const { bcode } = req.params;
+        const bar = await getBarByIdService(bcode);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -78,9 +78,9 @@ export const createBar = async (req, res, next) => {
 
 export const updateBar = async (req, res, next) => {
     try {
-        const { bid } = req.params;
+        const { bcode: currentCode } = req.params;
         const { bcode, eid, uid, desc } = req.body;
-        const bar = await updateBarService(bid, {
+        const bar = await updateBarService(currentCode, {
             bcode,
             eid,
             uid,
@@ -97,7 +97,7 @@ export const updateBar = async (req, res, next) => {
 
 export const patchBar = async (req, res, next) => {
     try {
-        const { bid } = req.params;
+        const { bcode } = req.params;
         const updates = { ...req.body };
 
         if (Object.keys(updates).length === 0) {
@@ -108,7 +108,7 @@ export const patchBar = async (req, res, next) => {
             updates.desc = null;
         }
 
-        const bar = await patchBarService(bid, updates);
+        const bar = await patchBarService(bcode, updates);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -121,8 +121,8 @@ export const patchBar = async (req, res, next) => {
 
 export const deleteBar = async (req, res, next) => {
     try {
-        const { bid } = req.params;
-        const bar = await deleteBarService(bid);
+        const { bcode } = req.params;
+        const bar = await deleteBarService(bcode);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }

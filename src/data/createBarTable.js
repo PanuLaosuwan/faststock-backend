@@ -4,7 +4,7 @@ const createBarTable = async () => {
     const createTableQuery = `
         CREATE TABLE IF NOT EXISTS bar (
             bid SERIAL PRIMARY KEY,
-            bcode VARCHAR(255) NOT NULL UNIQUE,
+            bcode VARCHAR(255) NOT NULL,
             eid INT NOT NULL,
             uid INT NOT NULL,
             "desc" TEXT,
@@ -68,14 +68,14 @@ const createBarTable = async () => {
     `;
 
     const dropOldPrimaryKey = `ALTER TABLE bar DROP CONSTRAINT IF EXISTS bar_pkey CASCADE`;
-    const addBcodeUnique = `
+    const dropBcodeUnique = `
         DO $$
         BEGIN
-            IF NOT EXISTS (
+            IF EXISTS (
                 SELECT 1 FROM information_schema.table_constraints
                 WHERE table_name = 'bar' AND constraint_type = 'UNIQUE' AND constraint_name = 'bar_bcode_key'
             ) THEN
-                ALTER TABLE bar ADD CONSTRAINT bar_bcode_key UNIQUE (bcode);
+                ALTER TABLE bar DROP CONSTRAINT bar_bcode_key;
             END IF;
         END$$;
     `;
@@ -130,7 +130,7 @@ const createBarTable = async () => {
         await pool.query(addBidColumn);
         await pool.query(createBidSequence);
         await pool.query(dropOldPrimaryKey);
-        await pool.query(addBcodeUnique);
+        await pool.query(dropBcodeUnique);
         await pool.query(ensurePrimaryKey);
         await pool.query(recreateFkStock);
         await pool.query(recreateFkLost);
