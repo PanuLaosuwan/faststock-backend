@@ -15,9 +15,15 @@ const createProductTable = async () => {
         )
     `;
 
+    // For existing databases that were created before vol became nullable and volunit was added
+    const alterVolNullableQuery = 'ALTER TABLE product ALTER COLUMN vol DROP NOT NULL';
+    const addVolunitIfMissingQuery = 'ALTER TABLE product ADD COLUMN IF NOT EXISTS volunit TEXT';
+
     try {
         await pool.query(createTableQuery);
-        console.log('Product table created successfully');
+        await pool.query(alterVolNullableQuery);
+        await pool.query(addVolunitIfMissingQuery);
+        console.log('Product table created/updated successfully');
     } catch (error) {
         console.error('Error creating product table', error);
         throw error;
