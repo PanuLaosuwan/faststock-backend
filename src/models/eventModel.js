@@ -64,7 +64,7 @@ const patchEventService = async (id, fields) => {
         `UPDATE event
          SET ${setClauses.join(', ')}
          WHERE eid = $${values.length}
-         RETURNING eid, ename, edate_start, edate_end, day, "desc"`,
+         RETURNING eid, ename, edate_start, edate_end, day, location, "desc"`,
         values
     );
     return result.rows[0];

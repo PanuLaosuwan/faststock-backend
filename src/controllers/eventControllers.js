@@ -127,8 +127,8 @@ export const updateEvent = async (req, res, next) => {
             ename,
             edate_start: startDate,
             edate_end: endDate,
-            day,
             location: location || null,
+            day,
             desc: desc || null
         });
         if (!event) {
