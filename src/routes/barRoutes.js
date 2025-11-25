@@ -16,10 +16,10 @@ const router = express.Router();
 router.get('/bars', getAllBars);
 router.get('/bars/byuid/:uid', getBarsByUser);
 router.get('/bars/byeid/:eid', getBarsByEvent);
-router.get('/bars/:bcode', getBarById);
+router.get('/bars/bybcode/:bcode', getBarById);
 router.post('/bars', validateBar, createBar);
-router.put('/bars/:bcode', validateBar, updateBar);
-router.patch('/bars/:bcode', validateBarPatch, patchBar);
-router.delete('/bars/:bcode', deleteBar);
+router.put('/bars/:bid', validateBar, updateBar);
+router.patch('/bars/:bid', validateBarPatch, patchBar);
+router.delete('/bars/:bid', deleteBar);
 
 export default router;

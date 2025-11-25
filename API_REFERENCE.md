@@ -42,9 +42,9 @@ Base URL
   { "bcode": "BAR-A", "eid": 1, "uid": 1, "desc": "Main bar" }
   ```
   - ต้องมี event (`eid`) และ user (`uid`) ที่มีอยู่จริง (FK)
-- `PUT /bars/:bcode` — ส่งครบฟิลด์
-- `PATCH /bars/:bcode` — ส่งบางฟิลด์
-- `DELETE /bars/:bcode`
+- `PUT /bars/:bid` — ส่งครบฟิลด์
+- `PATCH /bars/:bid` — ส่งบางฟิลด์
+- `DELETE /bars/:bid`
 
 สาย Product (master data)
 - ฟิลด์ `vol` ส่งได้หรือไม่ส่งก็ได้ (ค่า null) และมี `volunit` เป็น text สำหรับระบุหน่วยปริมาตร
