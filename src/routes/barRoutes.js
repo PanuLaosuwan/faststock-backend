@@ -14,12 +14,12 @@ import { validateBar, validateBarPatch } from '../middlewares/inputValidator.js'
 const router = express.Router();
 
 router.get('/bars', getAllBars);
-router.get('/bars/user/:uid', getBarsByUser);
-router.get('/bars/event/:eid', getBarsByEvent);
-router.get('/bars/:id', getBarById);
+router.get('/bars/byuid/:uid', getBarsByUser);
+router.get('/bars/byeid/:eid', getBarsByEvent);
+router.get('/bars/:bcode', getBarById);
 router.post('/bars', validateBar, createBar);
-router.put('/bars/:id', validateBar, updateBar);
-router.patch('/bars/:id', validateBarPatch, patchBar);
-router.delete('/bars/:id', deleteBar);
+router.put('/bars/:bcode', validateBar, updateBar);
+router.patch('/bars/:bcode', validateBarPatch, patchBar);
+router.delete('/bars/:bcode', deleteBar);
 
 export default router;

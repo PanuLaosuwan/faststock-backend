@@ -50,8 +50,8 @@ export const getBarsByEvent = async (req, res, next) => {
 
 export const getBarById = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const bar = await getBarByIdService(id);
+        const { bcode } = req.params;
+        const bar = await getBarByIdService(bcode);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -63,11 +63,11 @@ export const getBarById = async (req, res, next) => {
 
 export const createBar = async (req, res, next) => {
     try {
-        const { eid, uid, bname, desc } = req.body;
+        const { bcode, eid, uid, desc } = req.body;
         const bar = await createBarService({
+            bcode,
             eid,
             uid,
-            bname,
             desc: desc || null
         });
         handleResponse(res, 201, 'Bar created successfully', bar);
@@ -78,12 +78,12 @@ export const createBar = async (req, res, next) => {
 
 export const updateBar = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const { eid, uid, bname, desc } = req.body;
-        const bar = await updateBarService(id, {
+        const { bcode: currentCode } = req.params;
+        const { bcode, eid, uid, desc } = req.body;
+        const bar = await updateBarService(currentCode, {
+            bcode,
             eid,
             uid,
-            bname,
             desc: desc || null
         });
         if (!bar) {
@@ -97,7 +97,7 @@ export const updateBar = async (req, res, next) => {
 
 export const patchBar = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { bcode } = req.params;
         const updates = { ...req.body };
 
         if (Object.keys(updates).length === 0) {
@@ -108,7 +108,7 @@ export const patchBar = async (req, res, next) => {
             updates.desc = null;
         }
 
-        const bar = await patchBarService(id, updates);
+        const bar = await patchBarService(bcode, updates);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -121,8 +121,8 @@ export const patchBar = async (req, res, next) => {
 
 export const deleteBar = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const bar = await deleteBarService(id);
+        const { bcode } = req.params;
+        const bar = await deleteBarService(bcode);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }

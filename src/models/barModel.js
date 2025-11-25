@@ -2,10 +2,9 @@ import pool from '../config/db.js';
 
 const baseSelect = `
     SELECT
-        b.bid,
+        b.bcode,
         b.eid,
         b.uid,
-        b.bname,
         b."desc",
         e.location,
         e.ename
@@ -15,14 +14,14 @@ const baseSelect = `
 
 const getAllBarsService = async () => {
     const result = await pool.query(
-        `${baseSelect} ORDER BY b.bid`
+        `${baseSelect} ORDER BY b.bcode`
     );
     return result.rows;
 };
 
 const getBarsByUserService = async (uid) => {
     const result = await pool.query(
-        `${baseSelect} WHERE b.uid = $1 ORDER BY b.bid`,
+        `${baseSelect} WHERE b.uid = $1 ORDER BY b.bcode`,
         [uid]
     );
     return result.rows;
@@ -30,46 +29,46 @@ const getBarsByUserService = async (uid) => {
 
 const getBarsByEventService = async (eid) => {
     const result = await pool.query(
-        `${baseSelect} WHERE b.eid = $1 ORDER BY b.bid`,
+        `${baseSelect} WHERE b.eid = $1 ORDER BY b.bcode`,
         [eid]
     );
     return result.rows;
 };
 
-const getBarByIdService = async (id) => {
+const getBarByIdService = async (code) => {
     const result = await pool.query(
-        `${baseSelect} WHERE b.bid = $1`,
-        [id]
+        `${baseSelect} WHERE b.bcode = $1`,
+        [code]
     );
     return result.rows[0];
 };
 
-const createBarService = async ({ eid, uid, bname, desc }) => {
+const createBarService = async ({ bcode, eid, uid, desc }) => {
     const result = await pool.query(
-        `INSERT INTO bar (eid, uid, bname, "desc")
+        `INSERT INTO bar (bcode, eid, uid, "desc")
          VALUES ($1, $2, $3, $4)
-         RETURNING bid, eid, uid, bname, "desc"`,
-        [eid, uid, bname, desc]
+         RETURNING bcode, eid, uid, "desc"`,
+        [bcode, eid, uid, desc]
     );
     return result.rows[0];
 };
 
-const updateBarService = async (id, { eid, uid, bname, desc }) => {
+const updateBarService = async (code, { bcode, eid, uid, desc }) => {
     const result = await pool.query(
         `UPDATE bar
-         SET eid = $1,
-             uid = $2,
-             bname = $3,
+         SET bcode = $1,
+             eid = $2,
+             uid = $3,
              "desc" = $4
-         WHERE bid = $5
-         RETURNING bid, eid, uid, bname, "desc"`,
-        [eid, uid, bname, desc, id]
+         WHERE bcode = $5
+         RETURNING bcode, eid, uid, "desc"`,
+        [bcode, eid, uid, desc, code]
     );
     return result.rows[0];
 };
 
-const patchBarService = async (id, fields) => {
-    const allowedFields = ['eid', 'uid', 'bname', 'desc'];
+const patchBarService = async (code, fields) => {
+    const allowedFields = ['bcode', 'eid', 'uid', 'desc'];
     const setClauses = [];
     const values = [];
 
@@ -85,22 +84,22 @@ const patchBarService = async (id, fields) => {
         return null;
     }
 
-    values.push(id);
+    values.push(code);
 
     const result = await pool.query(
         `UPDATE bar
          SET ${setClauses.join(', ')}
-         WHERE bid = $${values.length}
-         RETURNING bid, eid, uid, bname, "desc"`,
+         WHERE bcode = $${values.length}
+         RETURNING bcode, eid, uid, "desc"`,
         values
     );
     return result.rows[0];
 };
 
-const deleteBarService = async (id) => {
+const deleteBarService = async (code) => {
     const result = await pool.query(
-        'DELETE FROM bar WHERE bid = $1 RETURNING bid, eid, uid, bname, "desc"',
-        [id]
+        'DELETE FROM bar WHERE bcode = $1 RETURNING bcode, eid, uid, "desc"',
+        [code]
     );
     return result.rows[0];
 };

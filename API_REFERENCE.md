@@ -34,17 +34,17 @@ Base URL
 
 สาย Bar
 - `GET /bars`
-- `GET /bars/:id`
-- `GET /bars/user/:uid` — ดึงบาร์ตามผู้รับผิดชอบ uid
-- `GET /bars/event/:eid` — ดึงบาร์ตามอีเวนต์
+- `GET /bars/bybcode/:bcode`
+- `GET /bars/byuid/:uid` — ดึงบาร์ตามผู้รับผิดชอบ uid
+- `GET /bars/byeid/:eid` — ดึงบาร์ตามอีเวนต์
 - `POST /bars`
   ```json
-  { "eid": 1, "uid": 1, "bname": "Bar A", "desc": "Main bar" }
+  { "bcode": "BAR-A", "eid": 1, "uid": 1, "desc": "Main bar" }
   ```
   - ต้องมี event (`eid`) และ user (`uid`) ที่มีอยู่จริง (FK)
-- `PUT /bars/:id` — ส่งครบฟิลด์
-- `PATCH /bars/:id` — ส่งบางฟิลด์
-- `DELETE /bars/:id`
+- `PUT /bars/:bcode` — ส่งครบฟิลด์
+- `PATCH /bars/:bcode` — ส่งบางฟิลด์
+- `DELETE /bars/:bcode`
 
 สาย Product (master data)
 - ฟิลด์ `vol` ส่งได้หรือไม่ส่งก็ได้ (ค่า null) และมี `volunit` เป็น text สำหรับระบุหน่วยปริมาตร
@@ -68,15 +68,15 @@ Base URL
 - `DELETE /products/:id`
 
 สาย Stock
-- ความหมายตาราง `stock`: ต่อบาร์ (`bid`), ต่อสินค้า (`pid`), ต่อวัน (`sdate`)
-  - ฟิลด์: `bid`, `sdate`, `pid`, `start_quantity`, `start_subquantity`, `end_quantity`, `end_subquantity`, `desc`
-  - PK: `(bid, sdate, pid)`
-- `GET /stock` — ทั้งหมด (join bar+event+product → มี `pname`, `unit`, `subunit`, `eid`, `ename`)
+- ความหมายตาราง `stock`: ต่อบาร์ (`bcode`), ต่อสินค้า (`pid`), ต่อวัน (`sdate`)
+  - ฟิลด์: `bcode`, `sdate`, `pid`, `start_quantity`, `start_subquantity`, `end_quantity`, `end_subquantity`, `desc`
+  - PK: `(bcode, sdate, pid)`
+- `GET /stock` — ทั้งหมด (join bar+event+product → มี `pname`, `vol`, `volunit`, `unit`, `subunit`, `eid`, `ename`)
   - response จะมี `pname`, `vol`, `volunit`, `unit`, `subunit`, `eid`, `ename`
-- `GET /stock/bybid/:barId` — ตามบาร์ (หรือใช้ `/bars/:barId/stock`)
+- `GET /stock/bybcode/:bcode` — ตามบาร์ (หรือใช้ `/bars/:bcode/stock`)
 - `GET /stock/byeid/:eid` — ตามอีเวนต์ (join bar)
-- `GET /bars/:barId/stock?date=YYYY-MM-DD` — ตามบาร์ (เลือกกรองวันได้)
-- `POST /bars/:barId/add-stock` — ตั้งสต็อกเริ่มต้นของวัน/สินค้า
+- `GET /bars/:bcode/stock?date=YYYY-MM-DD` — ตามบาร์ (เลือกกรองวันได้) — alias เดิม `/bars/:barId/stock` ยังรองรับ bcode
+- `POST /bars/:bcode/add-stock` — ตั้งสต็อกเริ่มต้นของวัน/สินค้า (alias `/bars/:barId/add-stock`)
   ```json
   {
     "pid": 1,
@@ -90,7 +90,7 @@ Base URL
   ```
   - ถ้า bar+pid+sdate ซ้ำ จะได้ 409
   - ถ้า bar หรือ product ไม่ตรง FK จะได้ 400
-- `PATCH /bars/:barId/stock/:pid/:sdate` — แก้สต็อกบันทึกนั้น (อย่างน้อย 1 ฟิลด์)
+- `PATCH /bars/:bcode/stock/:pid/:sdate` — แก้สต็อกบันทึกนั้น (อย่างน้อย 1 ฟิลด์) (alias `/bars/:barId/stock/:pid/:sdate`)
   - alias: `PATCH /stock/bar/:barId/product/:pid/:sdate` และ `PATCH /update-stock/bar/:barId/product/:pid/:sdate`
   - Body ตัวอย่าง
     ```json
@@ -98,7 +98,7 @@ Base URL
     ```
   - ฟิลด์ที่อัปเดตได้: `start_quantity`, `start_subquantity`, `end_quantity`, `end_subquantity`, `desc`
   - ถ้าไม่พบรายการจะได้ 404
-- `DELETE /bars/:barId/stock/:pid/:sdate` — ลบแถวนั้น
+- `DELETE /bars/:bcode/stock/:pid/:sdate` — ลบแถวนั้น (alias `/bars/:barId/stock/:pid/:sdate`)
 
 ตัวอย่างเรียกด้วย curl (ไม่ต้องแนบ token)
 1) สร้าง Event
@@ -111,7 +111,7 @@ curl -X POST http://localhost:4000/api/event \
 ```bash
 curl -X POST http://localhost:4000/api/bars \
   -H "Content-Type: application/json" \
-  -d '{"eid":1,"uid":1,"bname":"Bar A","desc":"Main bar"}'
+  -d '{"bcode":"BAR-A","eid":1,"uid":1,"desc":"Main bar"}'
 ```
 3) สร้าง Product
 ```bash
@@ -121,17 +121,17 @@ curl -X POST http://localhost:4000/api/products \
 ```
 4) ตั้งสต็อกเริ่มต้น
 ```bash
-curl -X POST http://localhost:4000/api/bars/1/add-stock \
+curl -X POST http://localhost:4000/api/bars/BAR-A/add-stock \
   -H "Content-Type: application/json" \
   -d '{"pid":1,"sdate":"2025-11-30","start_quantity":10,"start_subquantity":0,"desc":"initial"}'
 ```
 5) ดูสต็อกตามบาร์
 ```bash
-curl http://localhost:4000/api/stock/bybid/1
+curl http://localhost:4000/api/stock/bybcode/BAR-A
 ```
 6) แก้สต็อกบางส่วน (alias ใหม่)
 ```bash
-curl -X PATCH http://localhost:4000/api/update-stock/bar/1/product/1/2025-11-30 \
+curl -X PATCH http://localhost:4000/api/update-stock/bar/BAR-A/product/1/2025-11-30 \
   -H "Content-Type: application/json" \
   -d '{"end_quantity":8,"desc":"after service"}'
 ```

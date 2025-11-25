@@ -51,16 +51,16 @@ const eventPatchSchema = joi.object({
     });
 
 const barSchema = joi.object({
+    bcode: joi.string().min(1).max(255).required(),
     eid: joi.number().integer().positive().required(),
     uid: joi.number().integer().positive().required(),
-    bname: joi.string().min(1).max(255).required(),
     desc: joi.string().allow(null, '')
 });
 
 const barPatchSchema = joi.object({
+    bcode: joi.string().min(1).max(255),
     eid: joi.number().integer().positive(),
     uid: joi.number().integer().positive(),
-    bname: joi.string().min(1).max(255),
     desc: joi.string().allow(null, '')
 }).min(1);
 

@@ -35,9 +35,10 @@ const formatStock = (row) => {
 
 export const getStockForBar = async (req, res, next) => {
     try {
-        const { barId } = req.params;
+        const { barId, bcode } = req.params;
+        const barCode = bcode || barId;
         const { date } = req.query;
-        const rows = await getStockByBarService(barId, date || null);
+        const rows = await getStockByBarService(barCode, date || null);
         const formatted = rows.map(formatStock);
         handleResponse(res, 200, 'Stock fetched successfully', formatted);
     } catch (error) {
@@ -68,7 +69,8 @@ export const getStockForEvent = async (req, res, next) => {
 
 export const createStockInitial = async (req, res, next) => {
     try {
-        const { barId } = req.params;
+        const { barId, bcode } = req.params;
+        const barCode = bcode || barId;
         const {
             pid,
             sdate,
@@ -84,7 +86,7 @@ export const createStockInitial = async (req, res, next) => {
 
         try {
             const stock = await createStockInitialService({
-                bid: barId,
+                bcode: barCode,
                 pid,
                 sdate,
                 start_quantity,
@@ -110,10 +112,11 @@ export const createStockInitial = async (req, res, next) => {
 
 export const patchStockEntry = async (req, res, next) => {
     try {
-        const { barId, pid, sdate } = req.params;
+        const { barId, bcode, pid, sdate } = req.params;
+        const barCode = bcode || barId;
         const updates = { ...req.body };
 
-        const stock = await patchStockService(barId, pid, sdate, updates);
+        const stock = await patchStockService(barCode, pid, sdate, updates);
 
         if (!stock) {
             return handleResponse(res, 404, 'Stock entry not found', null);
@@ -127,8 +130,9 @@ export const patchStockEntry = async (req, res, next) => {
 
 export const deleteStockEntry = async (req, res, next) => {
     try {
-        const { barId, pid, sdate } = req.params;
-        const stock = await deleteStockService(barId, pid, sdate);
+        const { barId, bcode, pid, sdate } = req.params;
+        const barCode = bcode || barId;
+        const stock = await deleteStockService(barCode, pid, sdate);
 
         if (!stock) {
             return handleResponse(res, 404, 'Stock entry not found', null);
