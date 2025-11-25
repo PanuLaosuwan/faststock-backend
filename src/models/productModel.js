@@ -2,7 +2,7 @@ import pool from '../config/db.js';
 
 const getAllProductsService = async () => {
       const result = await pool.query(
-          'SELECT pid, pname, vol, category, unit, factor, subunit, "desc" FROM product'
+          'SELECT pid, pname, vol, volunit, category, unit, factor, subunit, "desc" FROM product'
       );
       return result.rows;
   };
@@ -15,18 +15,18 @@ const getAllProductsService = async () => {
       return result.rows[0];
   };
   const createProductService = async (product) => {
-    const { pname, vol, category, unit, factor, subunit, desc } = product;
+    const { pname, vol, volunit, category, unit, factor, subunit, desc } = product;
     const result = await pool.query(
-      'INSERT INTO product (pname, vol, category, unit, factor, subunit, "desc") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [pname, vol, category, unit, factor, subunit, desc]
+      'INSERT INTO product (pname, vol, volunit, category, unit, factor, subunit, "desc") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [pname, vol, volunit, category, unit, factor, subunit, desc]
     );
     return result.rows[0];
   };
   const updateProductService = async (id, product) => {
-    const { pname, vol, category, unit, factor, subunit, desc } = product;
+    const { pname, vol, volunit, category, unit, factor, subunit, desc } = product;
     const result = await pool.query(
-      'UPDATE product SET pname = $1, vol = $2, category = $3, unit = $4, factor = $5, subunit = $6, "desc" = $7 WHERE pid = $8 RETURNING *',
-      [pname, vol, category, unit, factor, subunit, desc, id]
+      'UPDATE product SET pname = $1, vol = $2, volunit = $3, category = $4, unit = $5, factor = $6, subunit = $7, "desc" = $8 WHERE pid = $9 RETURNING *',
+      [pname, vol, volunit, category, unit, factor, subunit, desc, id]
     );
     return result.rows[0];
   };
@@ -38,7 +38,7 @@ const getAllProductsService = async () => {
     return result.rows[0];
   };
   const patchProductService = async (id, fields) => {
-      const allowed = ['pname', 'vol', 'category', 'unit', 'factor', 'subunit', 'desc'];
+      const allowed = ['pname', 'vol', 'volunit', 'category', 'unit', 'factor', 'subunit', 'desc'];
       const setClauses = [];
       const values = [];
   
@@ -60,7 +60,7 @@ const getAllProductsService = async () => {
           `UPDATE product
            SET ${setClauses.join(', ')}
            WHERE pid = $${values.length}
-           RETURNING pid, pname, vol, category, unit, factor, subunit, "desc"`,
+           RETURNING pid, pname, vol, volunit, category, unit, factor, subunit, "desc"`,
           values
       );
       return result.rows[0];

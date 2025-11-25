@@ -5,7 +5,8 @@ const createProductTable = async () => {
         CREATE TABLE IF NOT EXISTS product (
             pid SERIAL PRIMARY KEY,
             pname VARCHAR(255) NOT NULL,
-            vol DOUBLE PRECISION NOT NULL,
+            vol DOUBLE PRECISION,
+            volunit TEXT,
             category VARCHAR(255) NOT NULL,
             unit TEXT NOT NULL,
             factor DOUBLE PRECISION NOT NULL,

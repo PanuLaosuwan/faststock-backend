@@ -47,6 +47,7 @@ Base URL
 - `DELETE /bars/:id`
 
 สาย Product (master data)
+- ฟิลด์ `vol` ส่งได้หรือไม่ส่งก็ได้ (ค่า null) และมี `volunit` เป็น text สำหรับระบุหน่วยปริมาตร
 - `GET /products`
 - `GET /products/:id`
 - `POST /products`
@@ -54,6 +55,7 @@ Base URL
   {
     "pname": "Singha Beer",
     "vol": 330,
+    "volunit": "ml",
     "category": "beer",
     "unit": "bottle",
     "factor": 1,
@@ -70,6 +72,7 @@ Base URL
   - ฟิลด์: `bid`, `sdate`, `pid`, `start_quantity`, `start_subquantity`, `end_quantity`, `end_subquantity`, `desc`
   - PK: `(bid, sdate, pid)`
 - `GET /stock` — ทั้งหมด (join bar+event+product → มี `pname`, `unit`, `subunit`, `eid`, `ename`)
+  - response จะมี `pname`, `vol`, `volunit`, `unit`, `subunit`, `eid`, `ename`
 - `GET /stock/bybid/:barId` — ตามบาร์ (หรือใช้ `/bars/:barId/stock`)
 - `GET /stock/byeid/:eid` — ตามอีเวนต์ (join bar)
 - `GET /bars/:barId/stock?date=YYYY-MM-DD` — ตามบาร์ (เลือกกรองวันได้)
