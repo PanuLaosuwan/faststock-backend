@@ -82,6 +82,26 @@ const stockPatchSchema = joi.object({
     desc: joi.string().allow(null, '')
 }).min(1);
 
+const prestockSchema = joi.object({
+    eid: joi.number().integer().positive().required(),
+    pid: joi.number().integer().positive().required(),
+    order_quantity: joi.number().integer(),
+    order_subquantity: joi.number(),
+    real_quantity: joi.number().integer(),
+    real_subquantity: joi.number(),
+    psdate: joi.date().iso(),
+    desc: joi.string().allow(null, '')
+});
+
+const prestockPatchSchema = joi.object({
+    order_quantity: joi.number().integer(),
+    order_subquantity: joi.number(),
+    real_quantity: joi.number().integer(),
+    real_subquantity: joi.number(),
+    psdate: joi.date().iso(),
+    desc: joi.string().allow(null, '')
+}).min(1);
+
 export const validateUser = (req, res, next) => {
     const { error } = userSchema.validate(req.body);
     if (error) {
@@ -173,6 +193,30 @@ export const validateStockInitial = (req, res, next) => {
 
 export const validateStockPatch = (req, res, next) => {
     const { error, value } = stockPatchSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            status: 400,
+            message: error.details[0].message
+        });
+    }
+    req.body = value;
+    next();
+};
+
+export const validatePrestock = (req, res, next) => {
+    const { error, value } = prestockSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            status: 400,
+            message: error.details[0].message
+        });
+    }
+    req.body = value;
+    next();
+};
+
+export const validatePrestockPatch = (req, res, next) => {
+    const { error, value } = prestockPatchSchema.validate(req.body);
     if (error) {
         return res.status(400).json({
             status: 400,
