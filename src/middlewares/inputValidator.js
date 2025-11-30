@@ -85,20 +85,20 @@ const stockPatchSchema = joi.object({
 const prestockSchema = joi.object({
     eid: joi.number().integer().positive().required(),
     pid: joi.number().integer().positive().required(),
-    order_quantity: joi.number().integer(),
-    order_subquantity: joi.number(),
-    real_quantity: joi.number().integer(),
-    real_subquantity: joi.number(),
-    psdate: joi.date().iso(),
+    order_quantity: joi.number().integer().allow(null),
+    order_subquantity: joi.number().allow(null),
+    real_quantity: joi.number().integer().allow(null),
+    real_subquantity: joi.number().allow(null),
+    psdate: joi.date().iso().allow(null),
     desc: joi.string().allow(null, '')
 });
 
 const prestockPatchSchema = joi.object({
-    order_quantity: joi.number().integer(),
-    order_subquantity: joi.number(),
-    real_quantity: joi.number().integer(),
-    real_subquantity: joi.number(),
-    psdate: joi.date().iso(),
+    order_quantity: joi.number().integer().allow(null),
+    order_subquantity: joi.number().allow(null),
+    real_quantity: joi.number().integer().allow(null),
+    real_subquantity: joi.number().allow(null),
+    psdate: joi.date().iso().allow(null),
     desc: joi.string().allow(null, '')
 }).min(1);
 
