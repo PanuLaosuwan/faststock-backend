@@ -61,6 +61,20 @@ const computeDayCount = (start, end) => {
     return diff;
 };
 
+const buildDateRange = (start, end) => {
+    const dates = [];
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    for (
+        let d = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+        d <= new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()));
+        d = new Date(d.getTime() + 24 * 60 * 60 * 1000)
+    ) {
+        dates.push(d.toISOString().slice(0, 10));
+    }
+    return dates;
+};
+
 export const getAllEvents = async (req, res, next) => {
     try {
         const events = await getAllEventsService();
@@ -252,27 +266,91 @@ export const getEventInventory = async (req, res, next) => {
             end_subqty: row.end_subquantity ?? null
         });
 
-        const stockByBar = stock.reduce((acc, row) => {
+        const stockByKey = stock.reduce((acc, row) => {
             const formatted = formatStockRow(row);
-            if (!acc[formatted.bcode]) {
-                acc[formatted.bcode] = [];
-            }
-            acc[formatted.bcode].push(formatted);
+            const key = `${formatted.bcode}|${formatted.pid}|${formatted.date}`;
+            acc[key] = formatted;
             return acc;
         }, {});
 
-        // build response keyed by bcode, including bars with no stock yet
+        // collect products from prestock and stock
+        const productMap = new Map();
+        prestock.forEach((row) => {
+            if (!productMap.has(row.pid)) {
+                productMap.set(row.pid, { pid: row.pid, pname: row.pname });
+            }
+        });
+        stock.forEach((row) => {
+            if (!productMap.has(row.pid)) {
+                productMap.set(row.pid, { pid: row.pid, pname: row.pname });
+            }
+        });
+
+        // fallback if no product found, still send empty arrays for bars
+        const products = productMap.size > 0 ? Array.from(productMap.values()) : [];
+        const dateRange =
+            event.edate_start && event.edate_end
+                ? buildDateRange(event.edate_start, event.edate_end)
+                : [];
+
         const data = {
             prestock: prestock.map(formatPrestockRow)
         };
+
         bars.forEach((bar) => {
-            data[bar.bcode] = stockByBar[bar.bcode] || [];
-        });
-        // include any bcode that appears in stock even if bar record is missing
-        Object.keys(stockByBar).forEach((bcode) => {
-            if (!data[bcode]) {
-                data[bcode] = stockByBar[bcode];
+            const rows = [];
+            if (products.length > 0 && dateRange.length > 0) {
+                dateRange.forEach((date) => {
+                    products.forEach((product) => {
+                        const key = `${bar.bcode}|${product.pid}|${date}`;
+                        const existing = stockByKey[key];
+                        if (existing) {
+                            rows.push(existing);
+                        } else {
+                            rows.push({
+                                pid: product.pid,
+                                pname: product.pname,
+                                date,
+                                start_qty: null,
+                                end_qty: null,
+                                start_subqty: null,
+                                end_subqty: null
+                            });
+                        }
+                    });
+                });
             }
+            data[bar.bcode] = rows;
+        });
+
+        // include any bcode that appears in stock even if bar record is missing
+        stock.forEach((row) => {
+            if (data[row.bcode]) {
+                return;
+            }
+            const rows = [];
+            if (products.length > 0 && dateRange.length > 0) {
+                dateRange.forEach((date) => {
+                    products.forEach((product) => {
+                        const key = `${row.bcode}|${product.pid}|${date}`;
+                        const existing = stockByKey[key];
+                        if (existing) {
+                            rows.push(existing);
+                        } else {
+                            rows.push({
+                                pid: product.pid,
+                                pname: product.pname,
+                                date,
+                                start_qty: null,
+                                end_qty: null,
+                                start_subqty: null,
+                                end_subqty: null
+                            });
+                        }
+                    });
+                });
+            }
+            data[row.bcode] = rows;
         });
 
         handleResponse(res, 200, 'Event inventory fetched successfully', data);
