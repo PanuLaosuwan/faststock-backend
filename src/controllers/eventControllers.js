@@ -1,4 +1,7 @@
 import eventServices from '../models/eventModel.js';
+import barServices from '../models/barModel.js';
+import prestockServices from '../models/prestockModel.js';
+import stockServices from '../models/stockModel.js';
 
 const {
     getAllEventsService,
@@ -9,6 +12,10 @@ const {
     deleteEventService
 } = eventServices;
 
+const { getBarsByEventService } = barServices;
+const { getPrestockByEventService } = prestockServices;
+const { getStockByEventService } = stockServices;
+
 const handleResponse = (res, status, message, data = null) => {
     return res.status(status).json({
         status,
@@ -17,17 +24,18 @@ const handleResponse = (res, status, message, data = null) => {
     });
 };
 
+const toDateOnly = (value) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) {
+        return value;
+    }
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+};
+
 const formatEventDates = (event) => {
     if (!event) {
         return event;
     }
-    const toDateOnly = (value) => {
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) {
-            return value;
-        }
-        return d.toISOString().slice(0, 10); // YYYY-MM-DD
-    };
     return {
         ...event,
         edate_start: toDateOnly(event.edate_start),
@@ -202,6 +210,66 @@ export const deleteEvent = async (req, res, next) => {
             return handleResponse(res, 404, 'Event not found', null);
         }
         handleResponse(res, 200, 'Event deleted successfully', formatEventDates(event));
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getEventInventory = async (req, res, next) => {
+    try {
+        const { id, eid } = req.params;
+        const eventId = eid || id;
+
+        const [event, prestock, bars, stock] = await Promise.all([
+            getEventByIdService(eventId),
+            getPrestockByEventService(eventId),
+            getBarsByEventService(eventId),
+            getStockByEventService(eventId)
+        ]);
+
+        if (!event) {
+            return handleResponse(res, 404, 'Event not found', null);
+        }
+
+        const formatPrestockRow = (row) => ({
+            pid: row.pid,
+            pname: row.pname,
+            date: row.psdate ? toDateOnly(row.psdate) : null,
+            start_qty: row.order_quantity ?? null,
+            end_qty: row.real_quantity ?? null,
+            start_subqty: row.order_subquantity ?? null,
+            end_subqty: row.real_subquantity ?? null
+        });
+
+        const formatStockRow = (row) => ({
+            bcode: row.bcode,
+            pid: row.pid,
+            pname: row.pname,
+            date: toDateOnly(row.sdate),
+            start_qty: row.start_quantity ?? null,
+            end_qty: row.end_quantity ?? null,
+            start_subqty: row.start_subquantity ?? null,
+            end_subqty: row.end_subquantity ?? null
+        });
+
+        const stockByBar = stock.reduce((acc, row) => {
+            const formatted = formatStockRow(row);
+            if (!acc[formatted.bcode]) {
+                acc[formatted.bcode] = [];
+            }
+            acc[formatted.bcode].push(formatted);
+            return acc;
+        }, {});
+
+        // build response keyed by bcode, including bars with no stock yet
+        const data = {
+            prestock: prestock.map(formatPrestockRow)
+        };
+        bars.forEach((bar) => {
+            data[bar.bcode] = stockByBar[bar.bcode] || [];
+        });
+
+        handleResponse(res, 200, 'Event inventory fetched successfully', data);
     } catch (error) {
         next(error);
     }
