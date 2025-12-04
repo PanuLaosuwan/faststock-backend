@@ -268,6 +268,12 @@ export const getEventInventory = async (req, res, next) => {
         bars.forEach((bar) => {
             data[bar.bcode] = stockByBar[bar.bcode] || [];
         });
+        // include any bcode that appears in stock even if bar record is missing
+        Object.keys(stockByBar).forEach((bcode) => {
+            if (!data[bcode]) {
+                data[bcode] = stockByBar[bcode];
+            }
+        });
 
         handleResponse(res, 200, 'Event inventory fetched successfully', data);
     } catch (error) {
