@@ -16,7 +16,7 @@ const router = express.Router();
 router.get('/bars', getAllBars);
 router.get('/bars/byuid/:uid', getBarsByUser);
 router.get('/bars/byeid/:eid', getBarsByEvent);
-router.get('/bars/bybcode/:bcode', getBarById);
+router.get('/bars/:bid', getBarById);
 router.post('/bars', validateBar, createBar);
 router.put('/bars/:bid', validateBar, updateBar);
 router.patch('/bars/:bid', validateBarPatch, patchBar);

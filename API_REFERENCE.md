@@ -35,7 +35,7 @@
 
 ## Bar
 - `GET /bars`
-- `GET /bars/bybcode/:bcode`
+- `GET /bars/:bid` — ใช้ bid (bar id) เพื่อดึงบาร์เดียว
 - `GET /bars/byuid/:uid` — บาร์ตามผู้รับผิดชอบ
 - `GET /bars/byeid/:eid` — บาร์ตามอีเวนต์
 - `POST /bars`
@@ -68,13 +68,14 @@
 - `DELETE /products/:id`
 
 ## Stock
-- ตาราง stock (PK: `bcode`, `sdate`, `pid`) เก็บรายวันต่อบาร์/สินค้า
+- ตาราง stock (PK: `bcode`, `sdate`, `pid`) เก็บรายวันต่อบาร์/สินค้า (endpoint ที่เกี่ยวกับบาร์รับ `bid` แล้ว map เป็น `bcode` ให้)
 - GET:
   - `GET /stock` — ทั้งหมด (join bar+event+product → มี `pname`, `vol`, `volunit`, `unit`, `subunit`, `eid`, `ename`)
-  - `GET /stock/bybcode/:bcode` — ตามบาร์ (หรือ `/bars/:bcode/stock?date=YYYY-MM-DD` ถ้าจะกรองวัน) — alias เดิม `/bars/:barId/stock` ยังรับ bcode
+  - `GET /stock/bybid/:bid` — ตามบาร์ (หรือ `/bars/:bid/stock?date=YYYY-MM-DD` ถ้าจะกรองวัน)
+  - `GET /stock/bybcode/:bcode` — legacy ถ้าถือ bcode อยู่แล้ว
   - `GET /stock/byeid/:eid` — ตามอีเวนต์ (join bar)
 - POST:
-  - `POST /bars/:bcode/add-stock` — ตั้งสต็อกเริ่มต้น/วัน (alias `/bars/:barId/add-stock`)
+  - `POST /bars/:bid/add-stock` — ตั้งสต็อกเริ่มต้น/วัน
     ```json
     {
       "pid": 1,
@@ -87,12 +88,38 @@
     }
     ```
     - ถ้า bar+pid+sdate ซ้ำ → 409, FK ผิด → 400
+  - `POST /stock/bulk` — upsert หลายรายการในคำขอเดียว (ต้องส่ง `bid` หรือ `bcode` ใน body)
+    ```json
+    {
+      "bid": 1,
+      "items": [
+        {
+          "pid": 1,
+          "sdate": "2024-06-15",
+          "start_quantity": 100,
+          "start_subquantity": 1,
+          "end_quantity": 80,
+          "end_subquantity": 0
+        },
+        {
+          "pid": 1,
+          "sdate": "2024-06-16",
+          "start_quantity": 100,
+          "start_subquantity": 1,
+          "end_quantity": 80,
+          "end_subquantity": 0
+        }
+      ]
+    }
+    ```
+    - ถ้า record เดิมมีอยู่ จะอัปเดต (upsert) ตามค่าที่ส่ง; ถ้าไม่มีจะสร้างใหม่
+    - คืน `created` (true/false) ต่อรายการ
 - PATCH (อย่างน้อย 1 ฟิลด์จาก `start_quantity`, `start_subquantity`, `end_quantity`, `end_subquantity`, `desc`):
-  - `PATCH /bars/:bcode/stock/:pid/:sdate` (alias `/bars/:barId/stock/:pid/:sdate`)
-  - alias: `PATCH /stock/bar/:barId/product/:pid/:sdate`
-  - alias: `PATCH /update-stock/bar/:barId/product/:pid/:sdate`
+  - `PATCH /bars/:bid/stock/:pid/:sdate`
+  - alias: `PATCH /stock/bar/:bid/product/:pid/:sdate`
+  - alias: `PATCH /update-stock/bar/:bid/product/:pid/:sdate`
 - DELETE:
-  - `DELETE /bars/:bcode/stock/:pid/:sdate` (alias `/bars/:barId/stock/:pid/:sdate`)
+  - `DELETE /bars/:bid/stock/:pid/:sdate`
 
 ## Prestock
 - ตาราง prestock (PK: `eid`, `pid`) เก็บยอดสั่งและยอดรับจริงต่อสินค้าในอีเวนต์
@@ -156,17 +183,17 @@ curl -X POST http://localhost:4000/api/products \
 ```
 4) ตั้งสต็อกเริ่มต้น
 ```bash
-curl -X POST http://localhost:4000/api/bars/BAR-A/add-stock \
+curl -X POST http://localhost:4000/api/bars/1/add-stock \
   -H "Content-Type: application/json" \
   -d '{"pid":1,"sdate":"2025-11-30","start_quantity":10,"start_subquantity":0,"desc":"initial"}'
 ```
 5) ดูสต็อกตามบาร์
 ```bash
-curl http://localhost:4000/api/stock/bybcode/BAR-A
+curl http://localhost:4000/api/stock/bybid/1
 ```
 6) แก้สต็อก (alias ใหม่)
 ```bash
-curl -X PATCH http://localhost:4000/api/update-stock/bar/BAR-A/product/1/2025-11-30 \
+curl -X PATCH http://localhost:4000/api/update-stock/bar/1/product/1/2025-11-30 \
   -H "Content-Type: application/json" \
   -d '{"end_quantity":8,"desc":"after service"}'
 ```

@@ -19,6 +19,11 @@ const handleResponse = (res, status, message, data = null) => {
     });
 };
 
+const parseBid = (value) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+};
+
 export const getAllBars = async (req, res, next) => {
     try {
         const bars = await getAllBarsService();
@@ -50,8 +55,12 @@ export const getBarsByEvent = async (req, res, next) => {
 
 export const getBarById = async (req, res, next) => {
     try {
-        const { bcode } = req.params;
-        const bar = await getBarByIdService(bcode);
+        const { bid } = req.params;
+        const barId = parseBid(bid);
+        if (barId === null) {
+            return handleResponse(res, 400, 'Invalid bar id', null);
+        }
+        const bar = await getBarByIdService(barId);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -78,9 +87,13 @@ export const createBar = async (req, res, next) => {
 
 export const updateBar = async (req, res, next) => {
     try {
-        const { bcode: currentCode } = req.params;
+        const { bid } = req.params;
+        const barId = parseBid(bid);
+        if (barId === null) {
+            return handleResponse(res, 400, 'Invalid bar id', null);
+        }
         const { bcode, eid, uid, desc } = req.body;
-        const bar = await updateBarService(currentCode, {
+        const bar = await updateBarService(barId, {
             bcode,
             eid,
             uid,
@@ -97,7 +110,11 @@ export const updateBar = async (req, res, next) => {
 
 export const patchBar = async (req, res, next) => {
     try {
-        const { bcode } = req.params;
+        const { bid } = req.params;
+        const barId = parseBid(bid);
+        if (barId === null) {
+            return handleResponse(res, 400, 'Invalid bar id', null);
+        }
         const updates = { ...req.body };
 
         if (Object.keys(updates).length === 0) {
@@ -108,7 +125,7 @@ export const patchBar = async (req, res, next) => {
             updates.desc = null;
         }
 
-        const bar = await patchBarService(bcode, updates);
+        const bar = await patchBarService(barId, updates);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }
@@ -121,8 +138,12 @@ export const patchBar = async (req, res, next) => {
 
 export const deleteBar = async (req, res, next) => {
     try {
-        const { bcode } = req.params;
-        const bar = await deleteBarService(bcode);
+        const { bid } = req.params;
+        const barId = parseBid(bid);
+        if (barId === null) {
+            return handleResponse(res, 400, 'Invalid bar id', null);
+        }
+        const bar = await deleteBarService(barId);
         if (!bar) {
             return handleResponse(res, 404, 'Bar not found', null);
         }

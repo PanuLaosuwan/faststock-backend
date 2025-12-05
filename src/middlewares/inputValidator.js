@@ -82,6 +82,25 @@ const stockPatchSchema = joi.object({
     desc: joi.string().allow(null, '')
 }).min(1);
 
+const stockBulkSchema = joi.object({
+    bid: joi.number().integer().positive(),
+    bcode: joi.string().min(1).max(255),
+    items: joi.array()
+        .items(
+            joi.object({
+                pid: joi.number().integer().positive().required(),
+                sdate: joi.date().iso().required(),
+                start_quantity: joi.number().integer().required(),
+                start_subquantity: joi.number().min(0).default(0),
+                end_quantity: joi.number().integer(),
+                end_subquantity: joi.number().min(0),
+                desc: joi.string().allow(null, '')
+            })
+        )
+        .min(1)
+        .required()
+});
+
 const prestockSchema = joi.object({
     eid: joi.number().integer().positive().required(),
     pid: joi.number().integer().positive().required(),
@@ -193,6 +212,18 @@ export const validateStockInitial = (req, res, next) => {
 
 export const validateStockPatch = (req, res, next) => {
     const { error, value } = stockPatchSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            status: 400,
+            message: error.details[0].message
+        });
+    }
+    req.body = value;
+    next();
+};
+
+export const validateStockBulk = (req, res, next) => {
+    const { error, value } = stockBulkSchema.validate(req.body);
     if (error) {
         return res.status(400).json({
             status: 400,

@@ -169,11 +169,60 @@ const deleteStockService = async (bcode, pid, sdate) => {
     return result.rows[0];
 };
 
+const upsertStockBulkService = async (bcode, items) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const results = [];
+
+        for (const item of items) {
+            const {
+                pid,
+                sdate,
+                start_quantity,
+                start_subquantity,
+                end_quantity,
+                end_subquantity,
+                desc
+            } = item;
+
+            const result = await client.query(
+                `INSERT INTO stock (
+                    bcode, sdate, pid,
+                    start_quantity, start_subquantity,
+                    end_quantity, end_subquantity,
+                    "desc"
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (bcode, sdate, pid) DO UPDATE SET
+                    start_quantity = EXCLUDED.start_quantity,
+                    start_subquantity = EXCLUDED.start_subquantity,
+                    end_quantity = EXCLUDED.end_quantity,
+                    end_subquantity = EXCLUDED.end_subquantity,
+                    "desc" = EXCLUDED."desc"
+                RETURNING bcode, sdate, pid, start_quantity, start_subquantity, end_quantity, end_subquantity, "desc", xmax = 0 AS created`,
+                [bcode, sdate, pid, start_quantity, start_subquantity, end_quantity, end_subquantity, desc]
+            );
+
+            results.push(result.rows[0]);
+        }
+
+        await client.query('COMMIT');
+        return results;
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 export default {
     getStockByBarService,
     getAllStockService,
     getStockByEventService,
     createStockInitialService,
     patchStockService,
-    deleteStockService
+    deleteStockService,
+    upsertStockBulkService
 };
