@@ -1,8 +1,24 @@
 import pool from '../config/db.js';
 
-const baseSelect = `
+const runBarQueries = async (queries, values = []) => {
+    let lastError = null;
+    for (const query of queries) {
+        try {
+            const result = await pool.query(query, values);
+            return result.rows;
+        } catch (error) {
+            lastError = error;
+            if (error.code !== '42703') {
+                throw error;
+            }
+        }
+    }
+    throw lastError;
+};
+
+const baseSelect = (bidExpr) => `
     SELECT
-        b.bid,
+        ${bidExpr} AS bid,
         b.bcode,
         b.eid,
         b.uid,
@@ -14,58 +30,99 @@ const baseSelect = `
 `;
 
 const getAllBarsService = async () => {
-    const result = await pool.query(
-        `${baseSelect} ORDER BY b.bcode`
-    );
-    return result.rows;
+    const queries = [
+        `${baseSelect('b.bid')} ORDER BY b.bcode`,
+        `${baseSelect('NULL::integer')} ORDER BY b.bcode`
+    ];
+    const rows = await runBarQueries(queries);
+    return rows;
 };
 
 const getBarsByUserService = async (uid) => {
-    const result = await pool.query(
-        `${baseSelect} WHERE b.uid = $1 ORDER BY b.bcode`,
-        [uid]
-    );
-    return result.rows;
+    const queries = [
+        `${baseSelect('b.bid')} WHERE b.uid = $1 ORDER BY b.bcode`,
+        `${baseSelect('NULL::integer')} WHERE b.uid = $1 ORDER BY b.bcode`
+    ];
+    const rows = await runBarQueries(queries, [uid]);
+    return rows;
 };
 
 const getBarsByEventService = async (eid) => {
-    const result = await pool.query(
-        `${baseSelect} WHERE b.eid = $1 ORDER BY b.bcode`,
-        [eid]
-    );
-    return result.rows;
+    const queries = [
+        `${baseSelect('b.bid')} WHERE b.eid = $1 ORDER BY b.bcode`,
+        `${baseSelect('NULL::integer')} WHERE b.eid = $1 ORDER BY b.bcode`
+    ];
+    const rows = await runBarQueries(queries, [eid]);
+    return rows;
 };
 
 const getBarByIdService = async (bid) => {
-    const result = await pool.query(
-        `${baseSelect} WHERE b.bid = $1`,
-        [bid]
-    );
-    return result.rows[0];
+    const queries = [
+        `${baseSelect('b.bid')} WHERE b.bid = $1`,
+        `${baseSelect('NULL::integer')} WHERE b.bcode = $1::text`
+    ];
+    const rows = await runBarQueries(queries, [bid]);
+    return rows[0];
 };
 
 const createBarService = async ({ bcode, eid, uid, desc }) => {
-    const result = await pool.query(
+    const values = [bcode, eid, uid, desc];
+    try {
+        const result = await pool.query(
+            `INSERT INTO bar (bcode, eid, uid, "desc")
+             VALUES ($1, $2, $3, $4)
+             RETURNING bid, bcode, eid, uid, "desc"`,
+            values
+        );
+        return result.rows[0];
+    } catch (error) {
+        if (error.code !== '42703') {
+            throw error;
+        }
+    }
+
+    const fallback = await pool.query(
         `INSERT INTO bar (bcode, eid, uid, "desc")
          VALUES ($1, $2, $3, $4)
-         RETURNING bid, bcode, eid, uid, "desc"`,
-        [bcode, eid, uid, desc]
+         RETURNING NULL::integer AS bid, bcode, eid, uid, "desc"`,
+        values
     );
-    return result.rows[0];
+    return fallback.rows[0];
 };
 
 const updateBarService = async (bid, { bcode, eid, uid, desc }) => {
-    const result = await pool.query(
+    const values = [bcode, eid, uid, desc, bid];
+    try {
+        const result = await pool.query(
+            `UPDATE bar
+             SET bcode = $1,
+                 eid = $2,
+                 uid = $3,
+                 "desc" = $4
+             WHERE bid = $5
+             RETURNING bid, bcode, eid, uid, "desc"`,
+            values
+        );
+        if (result.rows[0]) {
+            return result.rows[0];
+        }
+    } catch (error) {
+        if (error.code !== '42703') {
+            throw error;
+        }
+    }
+
+    const fallback = await pool.query(
         `UPDATE bar
          SET bcode = $1,
              eid = $2,
              uid = $3,
              "desc" = $4
-         WHERE bid = $5
-         RETURNING bid, bcode, eid, uid, "desc"`,
-        [bcode, eid, uid, desc, bid]
+         WHERE bcode = $5
+         RETURNING NULL::integer AS bid, bcode, eid, uid, "desc"`,
+        values
     );
-    return result.rows[0];
+    return fallback.rows[0];
 };
 
 const patchBarService = async (bid, fields) => {
@@ -87,22 +144,53 @@ const patchBarService = async (bid, fields) => {
 
     values.push(bid);
 
-    const result = await pool.query(
+    try {
+        const result = await pool.query(
+            `UPDATE bar
+             SET ${setClauses.join(', ')}
+             WHERE bid = $${values.length}
+             RETURNING bid, bcode, eid, uid, "desc"`,
+            values
+        );
+        if (result.rows[0]) {
+            return result.rows[0];
+        }
+    } catch (error) {
+        if (error.code !== '42703') {
+            throw error;
+        }
+    }
+
+    const resultFallback = await pool.query(
         `UPDATE bar
          SET ${setClauses.join(', ')}
-         WHERE bid = $${values.length}
-         RETURNING bid, bcode, eid, uid, "desc"`,
+         WHERE bcode = $${values.length}
+         RETURNING NULL::integer AS bid, bcode, eid, uid, "desc"`,
         values
     );
-    return result.rows[0];
+    return resultFallback.rows[0];
 };
 
 const deleteBarService = async (bid) => {
-    const result = await pool.query(
-        'DELETE FROM bar WHERE bid = $1 RETURNING bid, bcode, eid, uid, "desc"',
+    try {
+        const result = await pool.query(
+            'DELETE FROM bar WHERE bid = $1 RETURNING bid, bcode, eid, uid, "desc"',
+            [bid]
+        );
+        if (result.rows[0]) {
+            return result.rows[0];
+        }
+    } catch (error) {
+        if (error.code !== '42703') {
+            throw error;
+        }
+    }
+
+    const fallback = await pool.query(
+        'DELETE FROM bar WHERE bcode = $1 RETURNING NULL::integer AS bid, bcode, eid, uid, "desc"',
         [bid]
     );
-    return result.rows[0];
+    return fallback.rows[0];
 };
 export default {
     getAllBarsService,

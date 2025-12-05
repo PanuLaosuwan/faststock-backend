@@ -1,17 +1,36 @@
 import pool from '../config/db.js';
 
+const runStockQueries = async (queries, values) => {
+    let lastError = null;
+    for (const query of queries) {
+        try {
+            const result = await pool.query(query, values);
+            return result.rows;
+        } catch (error) {
+            lastError = error;
+            if (error.code !== '42703') {
+                throw error;
+            }
+        }
+    }
+    throw lastError;
+};
+
 const getStockByBarService = async (bcode, sdate = null) => {
     const values = [bcode];
-    let where = 'WHERE s.bcode = $1';
+    let wherePrimary = 'WHERE s.bcode = $1';
+    let whereFallback = 'WHERE b.bcode = $1';
 
     if (sdate) {
         values.push(sdate);
-        where += ` AND s.sdate = $${values.length}`;
+        const dateClause = ` AND s.sdate = $${values.length}`;
+        wherePrimary += dateClause;
+        whereFallback += dateClause;
     }
 
-    const result = await pool.query(
-        `SELECT
-            b.bid,
+    const baseSelect = (bidExpr) => `
+        SELECT
+            ${bidExpr} AS bid,
             b.eid,
             e.ename,
             b.bcode,
@@ -27,24 +46,48 @@ const getStockByBarService = async (bcode, sdate = null) => {
             s.end_quantity,
             s.end_subquantity,
             s."desc"
+    `;
+
+    const queries = [
+        `
+        ${baseSelect('b.bid')}
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bcode = b.bcode
         JOIN event e ON b.eid = e.eid
-        ${where}
-        ORDER BY s.sdate DESC, s.pid`,
-        values
-    );
-    return result.rows;
+        ${wherePrimary}
+        ORDER BY s.sdate DESC, s.pid
+    `,
+        `
+        ${baseSelect('NULL::integer')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bcode = b.bcode
+        JOIN event e ON b.eid = e.eid
+        ${wherePrimary}
+        ORDER BY s.sdate DESC, s.pid
+    `,
+        `
+        ${baseSelect('s.bid')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bcode
+        JOIN event e ON b.eid = e.eid
+        ${whereFallback}
+        ORDER BY s.sdate DESC, s.pid
+    `
+    ];
+
+    return runStockQueries(queries, values);
 };
 
 const getAllStockService = async () => {
-    const result = await pool.query(
-        `SELECT
-            b.bid,
+    const baseSelect = (bidExpr) => `
+        SELECT
+            ${bidExpr} AS bid,
             b.eid,
             e.ename,
-            s.bcode,
+            b.bcode,
             s.pid,
             p.pname,
             p.vol,
@@ -57,23 +100,45 @@ const getAllStockService = async () => {
             s.end_quantity,
             s.end_subquantity,
             s."desc"
-     
+    `;
+
+    const queries = [
+        `
+        ${baseSelect('b.bid')}
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bcode = b.bcode
         JOIN event e ON b.eid = e.eid
-        ORDER BY s.sdate DESC, s.bcode, s.pid`
-    );
-    return result.rows;
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('NULL::integer')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bcode = b.bcode
+        JOIN event e ON b.eid = e.eid
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('s.bid')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bcode
+        JOIN event e ON b.eid = e.eid
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `
+    ];
+
+    return runStockQueries(queries, []);
 };
 
 const getStockByEventService = async (eid) => {
-    const result = await pool.query(
-        `SELECT
-            b.bid,
+    const baseSelect = (bidExpr) => `
+        SELECT
+            ${bidExpr} AS bid,
             b.eid,
             e.ename,
-            s.bcode,
+            b.bcode,
             s.pid,
             p.pname,
             p.vol,
@@ -86,16 +151,39 @@ const getStockByEventService = async (eid) => {
             s.end_quantity,
             s.end_subquantity,
             s."desc"
-     
+    `;
+
+    const queries = [
+        `
+        ${baseSelect('b.bid')}
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bcode = b.bcode
         JOIN event e ON b.eid = e.eid
         WHERE b.eid = $1
-        ORDER BY s.sdate DESC, s.bcode, s.pid`,
-        [eid]
-    );
-    return result.rows;
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('NULL::integer')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bcode = b.bcode
+        JOIN event e ON b.eid = e.eid
+        WHERE b.eid = $1
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('s.bid')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bcode
+        JOIN event e ON b.eid = e.eid
+        WHERE b.eid = $1
+        ORDER BY s.sdate DESC, b.bcode, s.pid
+    `
+    ];
+
+    return runStockQueries(queries, [eid]);
 };
 
 const createStockInitialService = async ({

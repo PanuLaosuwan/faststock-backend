@@ -4,7 +4,9 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon --watch src --signal SIGINT src/index.js"
+    "dev": "nodemon --watch src --signal SIGINT src/index.js",
+    "migrate:bcode": "node src/data/migrateBcodeToText.js",
+    "check:bcode": "node src/data/checkBcode.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
