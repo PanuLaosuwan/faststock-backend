@@ -256,6 +256,7 @@ export const getEventInventory = async (req, res, next) => {
         });
 
         const formatStockRow = (row) => ({
+            bid: row.bid ?? null,
             bcode: row.bcode,
             pid: row.pid,
             pname: row.pname,
@@ -308,6 +309,7 @@ export const getEventInventory = async (req, res, next) => {
                             rows.push(existing);
                         } else {
                             rows.push({
+                                bid: bar.bid ?? null,
                                 pid: product.pid,
                                 pname: product.pname,
                                 date,
@@ -338,6 +340,7 @@ export const getEventInventory = async (req, res, next) => {
                             rows.push(existing);
                         } else {
                             rows.push({
+                                bid: row.bid ?? null,
                                 pid: product.pid,
                                 pname: product.pname,
                                 date,

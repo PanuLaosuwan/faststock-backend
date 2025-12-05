@@ -151,16 +151,16 @@
 - `GET /event/inventory/:eid` (alias: `/event/:eid/inventory`) — รวมข้อมูล event + prestock ของอีเวนต์นั้น และ stock ของทุกบาร์ในอีเวนต์เดียวกัน
 - Response (ตัวอย่างย่อ):
   ```json
-  {
-    "prestock": [
-      { "pid": 1, "pname": "Coca Cola", "date": "2024-06-15", "start_qty": 100, "end_qty": 90, "start_subqty": 0, "end_subqty": 0 }
-    ],
-    "C1": [
-      { "pid": 1, "pname": "Coca Cola", "date": "2024-06-15", "start_qty": 100, "end_qty": 80, "start_subqty": 1, "end_subqty": 0 }
-    ],
-    "C2": []
-  }
-  ```
+{
+  "prestock": [
+    { "pid": 1, "pname": "Coca Cola", "date": "2024-06-15", "start_qty": 100, "end_qty": 90, "start_subqty": 0, "end_subqty": 0 }
+  ],
+  "C1": [
+    { "bid": 5, "pid": 1, "pname": "Coca Cola", "date": "2024-06-15", "start_qty": 100, "end_qty": 80, "start_subqty": 1, "end_subqty": 0 }
+  ],
+  "C2": []
+}
+```
 
 ## ตัวอย่าง curl (ไม่ต้องแนบ token)
 1) สร้าง Event

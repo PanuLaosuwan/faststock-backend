@@ -11,7 +11,7 @@ const getStockByBarService = async (bcode, sdate = null) => {
 
     const result = await pool.query(
         `SELECT
-      
+            b.bid,
             b.eid,
             e.ename,
             b.bcode,
@@ -27,8 +27,6 @@ const getStockByBarService = async (bcode, sdate = null) => {
             s.end_quantity,
             s.end_subquantity,
             s."desc"
-    
-      
         FROM stock s
         JOIN product p ON s.pid = p.pid
         JOIN bar b ON s.bcode = b.bcode
@@ -43,6 +41,7 @@ const getStockByBarService = async (bcode, sdate = null) => {
 const getAllStockService = async () => {
     const result = await pool.query(
         `SELECT
+            b.bid,
             b.eid,
             e.ename,
             s.bcode,
@@ -71,6 +70,7 @@ const getAllStockService = async () => {
 const getStockByEventService = async (eid) => {
     const result = await pool.query(
         `SELECT
+            b.bid,
             b.eid,
             e.ename,
             s.bcode,
