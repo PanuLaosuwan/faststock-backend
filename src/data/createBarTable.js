@@ -61,25 +61,17 @@ const createBarTable = async () => {
             ) THEN
                 ALTER TABLE bar ALTER COLUMN bid SET DEFAULT nextval('bar_bid_seq');
             END IF;
-            PERFORM setval('bar_bid_seq', COALESCE((SELECT MAX(bid) FROM bar), 0));
+            PERFORM setval(
+                'bar_bid_seq',
+                GREATEST(COALESCE((SELECT MAX(bid) FROM bar), 1), 1),
+                (SELECT COUNT(*) > 0 FROM bar)
+            );
             UPDATE bar SET bid = nextval('bar_bid_seq') WHERE bid IS NULL;
             ALTER TABLE bar ALTER COLUMN bid SET NOT NULL;
         END$$;
     `;
 
     const dropOldPrimaryKey = `ALTER TABLE bar DROP CONSTRAINT IF EXISTS bar_pkey CASCADE`;
-    const dropBcodeUnique = `
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 FROM information_schema.table_constraints
-                WHERE table_name = 'bar' AND constraint_type = 'UNIQUE' AND constraint_name = 'bar_bcode_key'
-            ) THEN
-                ALTER TABLE bar DROP CONSTRAINT bar_bcode_key;
-            END IF;
-        END$$;
-    `;
-
     const ensurePrimaryKey = `
         DO $$
         BEGIN
@@ -88,6 +80,20 @@ const createBarTable = async () => {
                 WHERE table_name = 'bar' AND constraint_type = 'PRIMARY KEY'
             ) THEN
                 ALTER TABLE bar ADD CONSTRAINT bar_bid_pkey PRIMARY KEY (bid);
+            END IF;
+        END$$;
+    `;
+
+    const ensureBcodeUnique = `
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE table_name = 'bar'
+                  AND constraint_type = 'UNIQUE'
+                  AND constraint_name = 'bar_bcode_key'
+            ) THEN
+                ALTER TABLE bar ADD CONSTRAINT bar_bcode_key UNIQUE (bcode);
             END IF;
         END$$;
     `;
@@ -130,8 +136,8 @@ const createBarTable = async () => {
         await pool.query(addBidColumn);
         await pool.query(createBidSequence);
         await pool.query(dropOldPrimaryKey);
-        await pool.query(dropBcodeUnique);
         await pool.query(ensurePrimaryKey);
+        await pool.query(ensureBcodeUnique);
         await pool.query(recreateFkStock);
         await pool.query(recreateFkLost);
         console.log('Bar table created/updated successfully');
