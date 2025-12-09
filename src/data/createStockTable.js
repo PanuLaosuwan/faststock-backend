@@ -6,9 +6,9 @@ const createStockTable = async () => {
             bcode VARCHAR(255) NOT NULL,
             sdate DATE NOT NULL,
             pid INT NOT NULL,
-            start_quantity INT NOT NULL,
+            start_quantity INT,
             start_subquantity DOUBLE PRECISION,
-            end_quantity INT NOT NULL,
+            end_quantity INT,
             end_subquantity DOUBLE PRECISION,
             "desc" TEXT,
             PRIMARY KEY (bcode, sdate, pid),
@@ -47,6 +47,10 @@ const createStockTable = async () => {
         ALTER TABLE stock DROP CONSTRAINT IF EXISTS fk_stock_bar;
         ALTER TABLE stock ADD CONSTRAINT fk_stock_bar FOREIGN KEY (bcode) REFERENCES bar (bcode) ON DELETE CASCADE;
     `;
+    const relaxQuantityNotNull = `
+        ALTER TABLE stock ALTER COLUMN start_quantity DROP NOT NULL;
+        ALTER TABLE stock ALTER COLUMN end_quantity DROP NOT NULL;
+    `;
 
     try {
         await pool.query(createTableQuery);
@@ -54,6 +58,7 @@ const createStockTable = async () => {
         await pool.query(castBcodeToText);
         await pool.query(ensureBcodeNotNull);
         await pool.query(recreateFk);
+        await pool.query(relaxQuantityNotNull);
         console.log('Stock table created/updated successfully');
     } catch (error) {
         console.error('Error creating stock table', error);

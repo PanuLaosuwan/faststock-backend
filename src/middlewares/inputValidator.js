@@ -238,9 +238,9 @@ export const validateStockBulk = (req, res, next) => {
     };
 
     const normalizedItems = value.items.map((item) => {
-        const startQty = normalizeNumber(item.start_quantity, 0);
-        const startSub = normalizeNumber(item.start_subquantity, 0);
-        const endQty = normalizeNumber(item.end_quantity, startQty);
+        const startQty = normalizeNumber(item.start_quantity, null);
+        const startSub = normalizeNumber(item.start_subquantity, null);
+        const endQty = normalizeNumber(item.end_quantity, null);
         const endSub = normalizeNumber(item.end_subquantity, startSub);
         return {
             ...item,

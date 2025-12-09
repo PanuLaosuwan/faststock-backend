@@ -210,7 +210,7 @@ export const upsertStockBulk = async (req, res, next) => {
         }
 
         const normalizedItems = items.map((item) => {
-            const startSub = item.start_subquantity ?? 0;
+            const startSub = item.start_subquantity !== undefined ? item.start_subquantity : null;
             const endQty = item.end_quantity !== undefined ? item.end_quantity : item.start_quantity;
             const endSubQty = item.end_subquantity !== undefined ? item.end_subquantity : startSub;
             return {
