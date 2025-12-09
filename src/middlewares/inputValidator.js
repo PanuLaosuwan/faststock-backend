@@ -91,9 +91,9 @@ const stockBulkSchema = joi.object({
                 pid: joi.number().integer().positive().required(),
                 sdate: joi.date().iso().required(),
                 start_quantity: joi.number().integer().required(),
-                start_subquantity: joi.number().min(0).default(0),
-                end_quantity: joi.number().integer(),
-                end_subquantity: joi.number().min(0),
+                start_subquantity: joi.number().min(0).allow(null, '').default(0),
+                end_quantity: joi.number().integer().allow(null, ''),
+                end_subquantity: joi.number().min(0).allow(null, ''),
                 desc: joi.string().allow(null, '')
             })
         )
@@ -223,14 +223,38 @@ export const validateStockPatch = (req, res, next) => {
 };
 
 export const validateStockBulk = (req, res, next) => {
-    const { error, value } = stockBulkSchema.validate(req.body);
+    const { error, value } = stockBulkSchema.validate(req.body, { convert: true, stripUnknown: true });
     if (error) {
         return res.status(400).json({
             status: 400,
             message: error.details[0].message
         });
     }
-    req.body = value;
+    // Normalize numeric fields so downstream logic always receives numbers
+    const normalizeNumber = (val, fallback = null) => {
+        if (val === '' || val === null || val === undefined) return fallback;
+        const num = Number(val);
+        return Number.isNaN(num) ? fallback : num;
+    };
+
+    const normalizedItems = value.items.map((item) => {
+        const startQty = normalizeNumber(item.start_quantity, 0);
+        const startSub = normalizeNumber(item.start_subquantity, 0);
+        const endQty = normalizeNumber(item.end_quantity, startQty);
+        const endSub = normalizeNumber(item.end_subquantity, startSub);
+        return {
+            ...item,
+            start_quantity: startQty,
+            start_subquantity: startSub,
+            end_quantity: endQty,
+            end_subquantity: endSub
+        };
+    });
+
+    req.body = {
+        ...value,
+        items: normalizedItems
+    };
     next();
 };
 

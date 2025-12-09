@@ -244,6 +244,7 @@ export const getEventInventory = async (req, res, next) => {
         if (!event) {
             return handleResponse(res, 404, 'Event not found', null);
         }
+        
 
         const formatPrestockRow = (row) => ({
             pid: row.pid,
