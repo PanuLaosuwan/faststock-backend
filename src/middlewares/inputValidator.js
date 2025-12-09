@@ -90,7 +90,7 @@ const stockBulkSchema = joi.object({
             joi.object({
                 pid: joi.number().integer().positive().required(),
                 sdate: joi.date().iso().required(),
-                start_quantity: joi.number().integer().required(),
+                start_quantity: joi.number().integer().allow(null, '').required(),
                 start_subquantity: joi.number().min(0).allow(null, '').default(0),
                 end_quantity: joi.number().integer().allow(null, ''),
                 end_subquantity: joi.number().min(0).allow(null, ''),
