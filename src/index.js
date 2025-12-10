@@ -17,6 +17,7 @@ import productRoutes from './routes/productRoutes.js';
 import barRoutes from './routes/barRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import prestockRoutes from './routes/prestockRoutes.js';
+import lostRoutes from './routes/lostRoutes.js';
 
 
 
@@ -43,6 +44,7 @@ app.use('/api', productRoutes);
 app.use('/api', barRoutes);
 app.use('/api', stockRoutes);
 app.use('/api', prestockRoutes);
+app.use('/api', lostRoutes);
 
 
 //Create User Table

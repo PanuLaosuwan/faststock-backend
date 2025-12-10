@@ -65,6 +65,15 @@ const getBarByIdService = async (bid) => {
     return rows[0];
 };
 
+const getBarByCodeService = async (bcode) => {
+    const queries = [
+        `${baseSelect('b.bid')} WHERE b.bcode = $1`,
+        `${baseSelect('NULL::integer')} WHERE b.bcode = $1`
+    ];
+    const rows = await runBarQueries(queries, [bcode]);
+    return rows[0];
+};
+
 const createBarService = async ({ bcode, eid, uid, desc }) => {
     const values = [bcode, eid, uid, desc];
     try {
@@ -197,6 +206,7 @@ export default {
     getBarsByUserService,
     getBarsByEventService,
     getBarByIdService,
+    getBarByCodeService,
     createBarService,
     updateBarService,
     patchBarService,

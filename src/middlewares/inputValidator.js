@@ -101,6 +101,24 @@ const stockBulkSchema = joi.object({
         .required()
 });
 
+const lostSchema = joi.object({
+    pid: joi.number().integer().positive().required(),
+    sdate: joi.date().iso().required(),
+    category: joi.string().min(1).max(255).required(),
+    receiver: joi.string().max(255).allow(null, ''),
+    quantity: joi.number().integer().min(0).required(),
+    subquantity: joi.number().min(0),
+    desc: joi.string().allow(null, '')
+});
+
+const lostPatchSchema = joi.object({
+    category: joi.string().min(1).max(255),
+    receiver: joi.string().max(255).allow(null, ''),
+    quantity: joi.number().integer().min(0),
+    subquantity: joi.number().min(0),
+    desc: joi.string().allow(null, '')
+}).min(1);
+
 const prestockSchema = joi.object({
     eid: joi.number().integer().positive().required(),
     pid: joi.number().integer().positive().required(),
@@ -255,6 +273,30 @@ export const validateStockBulk = (req, res, next) => {
         ...value,
         items: normalizedItems
     };
+    next();
+};
+
+export const validateLost = (req, res, next) => {
+    const { error, value } = lostSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            status: 400,
+            message: error.details[0].message
+        });
+    }
+    req.body = value;
+    next();
+};
+
+export const validateLostPatch = (req, res, next) => {
+    const { error, value } = lostPatchSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            status: 400,
+            message: error.details[0].message
+        });
+    }
+    req.body = value;
     next();
 };
 

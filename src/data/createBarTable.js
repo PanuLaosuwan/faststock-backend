@@ -116,12 +116,25 @@ const createBarTable = async () => {
         DO $$
         BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'lost') THEN
-                BEGIN
-                    ALTER TABLE lost DROP CONSTRAINT IF EXISTS fk_lost_bar;
-                    ALTER TABLE lost ADD CONSTRAINT fk_lost_bar FOREIGN KEY (bcode) REFERENCES bar (bcode) ON DELETE CASCADE;
-                EXCEPTION WHEN undefined_table THEN
-                    NULL;
-                END;
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns WHERE table_name = 'lost' AND column_name = 'bid'
+                ) THEN
+                    BEGIN
+                        ALTER TABLE lost DROP CONSTRAINT IF EXISTS fk_lost_bar;
+                        ALTER TABLE lost ADD CONSTRAINT fk_lost_bar FOREIGN KEY (bid) REFERENCES bar (bid) ON DELETE CASCADE;
+                    EXCEPTION WHEN undefined_table THEN
+                        NULL;
+                    END;
+                ELSIF EXISTS (
+                    SELECT 1 FROM information_schema.columns WHERE table_name = 'lost' AND column_name = 'bcode'
+                ) THEN
+                    BEGIN
+                        ALTER TABLE lost DROP CONSTRAINT IF EXISTS fk_lost_bar;
+                        ALTER TABLE lost ADD CONSTRAINT fk_lost_bar FOREIGN KEY (bcode) REFERENCES bar (bcode) ON DELETE CASCADE;
+                    EXCEPTION WHEN undefined_table THEN
+                        NULL;
+                    END;
+                END IF;
             END IF;
         END$$;
     `;

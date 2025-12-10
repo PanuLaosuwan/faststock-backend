@@ -121,6 +121,102 @@
 - DELETE:
   - `DELETE /bars/:bid/stock/:pid/:sdate`
 
+## Lost
+- ตาราง lost (PK: `bid`, `sdate`, `pid`) เก็บยอดหาย/แตก/ใช้ต่อบาร์/วัน, response มี `bid`, `bcode`, `pname`, `vol`, `volunit`, `unit`, `subunit`, `eid`, `ename`
+- GET:
+  - `GET /lost` — ทั้งหมด
+  - `GET /lost/bybid/:bid` — ตามบาร์ (หรือ `/bars/:bid/lost?date=YYYY-MM-DD` กรองวัน)
+  - `GET /lost/bybcode/:bcode` — legacy ถ้ามี bcode ตรงๆ
+  - `GET /lost/byeid/:eid` — ตามอีเวนต์ (alias: `/event/:eid/lost`)
+  - ตัวอย่าง response (array):
+    ```json
+    [
+      {
+        "bid": 1,
+        "bcode": "BAR-A",
+        "eid": 10,
+        "ename": "Concert Day 1",
+        "pid": 5,
+        "pname": "Singha Beer 330",
+        "vol": 330,
+        "volunit": "ml",
+        "unit": "bottle",
+        "subunit": "bottle",
+        "sdate": "2025-11-30",
+        "category": "broken",
+        "receiver": "staff A",
+        "quantity": 2,
+        "subquantity": 0,
+        "desc": "dropped bottles"
+      }
+    ]
+    ```
+- POST:
+  - `POST /bars/:bid/add-lost`
+    ```json
+    {
+      "pid": 1,
+      "sdate": "2025-11-30",
+      "category": "broken",
+      "receiver": "staff name",
+      "quantity": 2,
+      "subquantity": 0,
+      "desc": "dropped bottles"
+    }
+    ```
+    - ถ้า bar+pid+sdate ซ้ำ → 409, FK ผิด → 400
+    - ตัวอย่าง response (201):
+    ```json
+    {
+      "bid": 1,
+      "bcode": "BAR-A",
+      "eid": 10,
+      "ename": "Concert Day 1",
+      "pid": 5,
+      "pname": "Singha Beer 330",
+      "vol": 330,
+      "volunit": "ml",
+      "unit": "bottle",
+      "subunit": "bottle",
+      "sdate": "2025-11-30",
+      "category": "broken",
+      "receiver": "staff name",
+      "quantity": 2,
+      "subquantity": 0,
+      "desc": "dropped bottles"
+    }
+    ```
+- PATCH (อย่างน้อย 1 ฟิลด์จาก `category`, `receiver`, `quantity`, `subquantity`, `desc`):
+  - `PATCH /bars/:bid/lost/:pid/:sdate`
+  - ตัวอย่าง body:
+    ```json
+    { "quantity": 1, "desc": "only one broken" }
+    ```
+  - ตัวอย่าง response (200):
+    ```json
+    {
+      "bid": 1,
+      "bcode": "BAR-A",
+      "eid": 10,
+      "ename": "Concert Day 1",
+      "pid": 5,
+      "pname": "Singha Beer 330",
+      "vol": 330,
+      "volunit": "ml",
+      "unit": "bottle",
+      "subunit": "bottle",
+      "sdate": "2025-11-30",
+      "category": "broken",
+      "receiver": "staff name",
+      "quantity": 1,
+      "subquantity": 0,
+      "desc": "only one broken"
+    }
+    ```
+- DELETE:
+  - `DELETE /bars/:bid/lost/:pid/:sdate`
+  - คืน row ที่ถูกลบ (โครงสร้างเหมือน response ด้านบน)
+
 ## Prestock
 - ตาราง prestock (PK: `eid`, `pid`) เก็บยอดสั่งและยอดรับจริงต่อสินค้าในอีเวนต์
 - GET:
