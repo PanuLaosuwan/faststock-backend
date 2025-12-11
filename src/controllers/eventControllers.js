@@ -497,18 +497,25 @@ export const getEventStockSummaryByDate = async (req, res, next) => {
             });
 
             const totalsByBar = new Map();
-            stateMap.forEach((state) => {
-                const barEntry = totalsByBar.get(state.bcode) || { bid: state.bid, bcode: state.bcode };
-                const remainingTotal =
-                    Number.isFinite(state.totalStart) && Number.isFinite(state.totalUse)
-                        ? state.totalStart - state.totalUse
-                        : null;
-                barEntry[`${state.pname} stock`] = Number.isFinite(state.totalStart)
-                    ? state.totalStart
-                    : null;
-                barEntry[`${state.pname} ใช้`] = Number.isFinite(state.totalUse) ? state.totalUse : null;
-                barEntry[`${state.pname} เหลือ`] = Number.isFinite(remainingTotal) ? remainingTotal : null;
-                totalsByBar.set(state.bcode, barEntry);
+            barInfoByCode.forEach((barInfo) => {
+                totalsByBar.set(barInfo.bcode, { bid: barInfo.bid ?? null, bcode: barInfo.bcode });
+            });
+
+            products.forEach(({ pid, pname }) => {
+                barInfoByCode.forEach((barInfo) => {
+                    const state = stateMap.get(`${barInfo.bcode}|${pid}`);
+                    const totalStart = state ? state.totalStart : null;
+                    const totalUse = state ? state.totalUse : null;
+                    const remainingTotal =
+                        Number.isFinite(totalStart) && Number.isFinite(totalUse)
+                            ? totalStart - totalUse
+                            : null;
+
+                    const barEntry = totalsByBar.get(barInfo.bcode);
+                    barEntry[`${pname} stock`] = Number.isFinite(totalStart) ? totalStart : null;
+                    barEntry[`${pname} ใช้`] = Number.isFinite(totalUse) ? totalUse : null;
+                    barEntry[`${pname} เหลือ`] = Number.isFinite(remainingTotal) ? remainingTotal : null;
+                });
             });
 
             return Array.from(totalsByBar.values());
