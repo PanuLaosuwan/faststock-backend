@@ -369,12 +369,9 @@ export const getEventStockSummaryByDate = async (req, res, next) => {
         const eventId = eid || id;
         const { date } = req.query;
 
-        if (!date) {
-            return handleResponse(res, 400, 'Date query parameter is required', null);
-        }
-
-        const normalizedDate = normalizeDate(date);
-        if (!normalizedDate) {
+        const hasDate = !!date;
+        const normalizedDate = hasDate ? normalizeDate(date) : null;
+        if (hasDate && !normalizedDate) {
             return handleResponse(res, 400, 'Invalid date format', null);
         }
 
@@ -382,7 +379,7 @@ export const getEventStockSummaryByDate = async (req, res, next) => {
             getEventByIdService(eventId),
             getPrestockByEventService(eventId),
             getBarsByEventService(eventId),
-            getStockByEventAndDateService(eventId, normalizedDate)
+            hasDate ? getStockByEventAndDateService(eventId, normalizedDate) : getStockByEventService(eventId)
         ]);
 
         if (!event) {
@@ -403,15 +400,23 @@ export const getEventStockSummaryByDate = async (req, res, next) => {
         const products = Array.from(productMap.entries()).map(([pid, pname]) => ({ pid, pname }));
 
         const stockByKey = stock.reduce((acc, row) => {
-            const key = `${row.bcode}|${row.pid}`;
+            const key = `${row.bcode}|${row.pid}|${toDateOnly(row.sdate)}`;
             acc[key] = row;
             return acc;
         }, {});
 
-        const buildBarEntry = (barInfo) => {
+        const barInfoByCode = new Map();
+        bars.forEach((bar) => barInfoByCode.set(bar.bcode, bar));
+        stock.forEach((row) => {
+            if (!barInfoByCode.has(row.bcode)) {
+                barInfoByCode.set(row.bcode, { bid: row.bid ?? null, bcode: row.bcode });
+            }
+        });
+
+        const buildBarEntry = (barInfo, targetDate) => {
             const entry = { bid: barInfo.bid ?? null, bcode: barInfo.bcode };
             products.forEach(({ pid, pname }) => {
-                const row = stockByKey[`${barInfo.bcode}|${pid}`];
+                const row = stockByKey[`${barInfo.bcode}|${pid}|${targetDate}`];
                 const startQty = row?.start_quantity ?? null;
                 const endQty = row?.end_quantity ?? null;
                 entry[`${pname} stock`] = startQty;
@@ -422,14 +427,95 @@ export const getEventStockSummaryByDate = async (req, res, next) => {
             return entry;
         };
 
-        const response = bars.map((bar) => buildBarEntry(bar));
+        const dateList =
+            hasDate && normalizedDate
+                ? [normalizedDate]
+                : event.edate_start && event.edate_end
+                    ? buildDateRange(event.edate_start, event.edate_end)
+                    : Array.from(new Set(stock.map((row) => toDateOnly(row.sdate)))).sort();
 
-        stock.forEach((row) => {
-            if (response.some((item) => item.bcode === row.bcode)) {
-                return;
-            }
-            response.push(buildBarEntry({ bid: row.bid ?? null, bcode: row.bcode }));
+        const dateEntries = dateList.map((sdate) => {
+            const barEntries = bars.map((bar) => buildBarEntry(bar, sdate));
+            stock.forEach((row) => {
+                if (toDateOnly(row.sdate) !== sdate) {
+                    return;
+                }
+                if (barEntries.some((item) => item.bcode === row.bcode)) {
+                    return;
+                }
+                barEntries.push(buildBarEntry({ bid: row.bid ?? null, bcode: row.bcode }, sdate));
+            });
+            return { date: sdate, bars: barEntries };
         });
+
+        const computeTotals = () => {
+            const stateMap = new Map(); // key: bcode|pid
+
+            dateList.forEach((sdate) => {
+                barInfoByCode.forEach((barInfo) => {
+                    products.forEach(({ pid, pname }) => {
+                        const row = stockByKey[`${barInfo.bcode}|${pid}|${sdate}`];
+                        if (!row) {
+                            return;
+                        }
+                        const key = `${barInfo.bcode}|${pid}`;
+                        const state =
+                            stateMap.get(key) ||
+                            {
+                                bid: barInfo.bid ?? null,
+                                bcode: barInfo.bcode,
+                                pid,
+                                pname,
+                                totalStart: 0,
+                                totalUse: 0,
+                                prevRemaining: null
+                            };
+
+                        const startQty = Number(row.start_quantity);
+                        const endQty = Number(row.end_quantity);
+
+                        if (Number.isFinite(startQty)) {
+                            const increment = Number.isFinite(state.prevRemaining)
+                                ? Math.max(0, startQty - state.prevRemaining)
+                                : startQty;
+                            state.totalStart += increment;
+                        }
+
+                        if (Number.isFinite(endQty)) {
+                            state.totalUse += endQty;
+                        }
+
+                        const remaining =
+                            Number.isFinite(startQty) && Number.isFinite(endQty)
+                                ? startQty - endQty
+                                : null;
+                        state.prevRemaining = Number.isFinite(remaining) ? remaining : null;
+
+                        stateMap.set(key, state);
+                    });
+                });
+            });
+
+            const totalsByBar = new Map();
+            stateMap.forEach((state) => {
+                const barEntry = totalsByBar.get(state.bcode) || { bid: state.bid, bcode: state.bcode };
+                const remainingTotal =
+                    Number.isFinite(state.totalStart) && Number.isFinite(state.totalUse)
+                        ? state.totalStart - state.totalUse
+                        : null;
+                barEntry[`${state.pname} stock`] = Number.isFinite(state.totalStart)
+                    ? state.totalStart
+                    : null;
+                barEntry[`${state.pname} ใช้`] = Number.isFinite(state.totalUse) ? state.totalUse : null;
+                barEntry[`${state.pname} เหลือ`] = Number.isFinite(remainingTotal) ? remainingTotal : null;
+                totalsByBar.set(state.bcode, barEntry);
+            });
+
+            return Array.from(totalsByBar.values());
+        };
+
+        const totalEntry = { date: 'Total', bars: computeTotals() };
+        const response = [totalEntry, ...dateEntries];
 
         handleResponse(res, 200, 'Event stock summary fetched successfully', response);
     } catch (error) {
