@@ -186,6 +186,56 @@ const getStockByEventService = async (eid) => {
     return runStockQueries(queries, [eid]);
 };
 
+const getStockByEventAndDateService = async (eid, sdate) => {
+    const baseSelect = (bidExpr) => `
+        SELECT
+            ${bidExpr} AS bid,
+            b.eid,
+            b.bcode,
+            s.pid,
+            p.pname,
+            p.vol,
+            p.volunit,
+            p.unit,
+            p.subunit,
+            s.sdate,
+            s.start_quantity,
+            s.start_subquantity,
+            s.end_quantity,
+            s.end_subquantity,
+            s."desc"
+    `;
+
+    const queries = [
+        `
+        ${baseSelect('b.bid')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bcode = b.bcode
+        WHERE b.eid = $1 AND s.sdate = $2
+        ORDER BY b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('NULL::integer')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bcode = b.bcode
+        WHERE b.eid = $1 AND s.sdate = $2
+        ORDER BY b.bcode, s.pid
+    `,
+        `
+        ${baseSelect('s.bid')}
+        FROM stock s
+        JOIN product p ON s.pid = p.pid
+        JOIN bar b ON s.bid = b.bcode
+        WHERE b.eid = $1 AND s.sdate = $2
+        ORDER BY b.bcode, s.pid
+    `
+    ];
+
+    return runStockQueries(queries, [eid, sdate]);
+};
+
 const createStockInitialService = async ({
     bcode,
     pid,
@@ -309,6 +359,7 @@ export default {
     getStockByBarService,
     getAllStockService,
     getStockByEventService,
+    getStockByEventAndDateService,
     createStockInitialService,
     patchStockService,
     deleteStockService,

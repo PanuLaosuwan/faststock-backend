@@ -14,7 +14,7 @@ const {
 
 const { getBarsByEventService } = barServices;
 const { getPrestockByEventService } = prestockServices;
-const { getStockByEventService } = stockServices;
+const { getStockByEventService, getStockByEventAndDateService } = stockServices;
 
 const handleResponse = (res, status, message, data = null) => {
     return res.status(status).json({
@@ -358,6 +358,80 @@ export const getEventInventory = async (req, res, next) => {
         });
 
         handleResponse(res, 200, 'Event inventory fetched successfully', data);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getEventStockSummaryByDate = async (req, res, next) => {
+    try {
+        const { id, eid } = req.params;
+        const eventId = eid || id;
+        const { date } = req.query;
+
+        if (!date) {
+            return handleResponse(res, 400, 'Date query parameter is required', null);
+        }
+
+        const normalizedDate = normalizeDate(date);
+        if (!normalizedDate) {
+            return handleResponse(res, 400, 'Invalid date format', null);
+        }
+
+        const [event, prestock, bars, stock] = await Promise.all([
+            getEventByIdService(eventId),
+            getPrestockByEventService(eventId),
+            getBarsByEventService(eventId),
+            getStockByEventAndDateService(eventId, normalizedDate)
+        ]);
+
+        if (!event) {
+            return handleResponse(res, 404, 'Event not found', null);
+        }
+
+        const productMap = new Map();
+        prestock.forEach((row) => {
+            if (!productMap.has(row.pid)) {
+                productMap.set(row.pid, row.pname);
+            }
+        });
+        stock.forEach((row) => {
+            if (!productMap.has(row.pid)) {
+                productMap.set(row.pid, row.pname);
+            }
+        });
+        const products = Array.from(productMap.entries()).map(([pid, pname]) => ({ pid, pname }));
+
+        const stockByKey = stock.reduce((acc, row) => {
+            const key = `${row.bcode}|${row.pid}`;
+            acc[key] = row;
+            return acc;
+        }, {});
+
+        const buildBarEntry = (barInfo) => {
+            const entry = { bid: barInfo.bid ?? null, bcode: barInfo.bcode };
+            products.forEach(({ pid, pname }) => {
+                const row = stockByKey[`${barInfo.bcode}|${pid}`];
+                const startQty = row?.start_quantity ?? null;
+                const endQty = row?.end_quantity ?? null;
+                entry[`${pname} stock`] = startQty;
+                entry[`${pname} ใช้`] = endQty;
+                entry[`${pname} เหลือ`] =
+                    startQty !== null && endQty !== null ? startQty - endQty : null;
+            });
+            return entry;
+        };
+
+        const response = bars.map((bar) => buildBarEntry(bar));
+
+        stock.forEach((row) => {
+            if (response.some((item) => item.bcode === row.bcode)) {
+                return;
+            }
+            response.push(buildBarEntry({ bid: row.bid ?? null, bcode: row.bcode }));
+        });
+
+        handleResponse(res, 200, 'Event stock summary fetched successfully', response);
     } catch (error) {
         next(error);
     }
